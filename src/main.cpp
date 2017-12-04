@@ -69,7 +69,7 @@ void print_versions()
 int main(void)
 {
 	// Create the GLFW window
-	window = Window::create_window(640, 480);
+	window = Window::create_window(1920, 1080);
 	// Print OpenGL and GLSL versions
 	print_versions();
 	// Setup callbacks
@@ -78,7 +78,7 @@ int main(void)
 	setup_opengl_settings();
 	// Initialize objects/pointers for rendering
 	Window::initialize_objects();
-
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	// Loop while GLFW window should stay open
 	while (!glfwWindowShouldClose(window))
 	{

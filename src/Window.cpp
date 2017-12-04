@@ -16,6 +16,7 @@ int selected;
 double lastUpdatetime;
 bool shouldUpdate;
 bool shouldAllowManu = true;
+float xrot = 0, yrot = 0;
 
 // On some systems you need to change this to the absolute path
 #define VERTEX_SHADER_PATH "../src/shader.vert"
@@ -69,7 +70,7 @@ void Window::initialize_objects()
 	controls = loadControls(glm::mat4(1.0f));
 	obj->curvePts = curve->vertices;
 	RefreshBallPos();	
-	lastUpdatetime = glfwGetTime();
+	lastUpdatetime = glfwGetTime();	
 }
 
 void Window::RefreshBallPos()
@@ -138,7 +139,6 @@ GLFWwindow* Window::create_window(int width, int height)
 	glfwGetFramebufferSize(window, &width, &height);
 	// Call the resize callback to make sure things get drawn immediately
 	Window::resize_callback(window, width, height);
-
 	return window;
 }
 
@@ -200,7 +200,7 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 		Movement = None;
 		// Check if escape was pressed
 		if (key == GLFW_KEY_ESCAPE)
-		{
+		{			
 			// Close the window. This causes the program to also terminate.
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
@@ -253,22 +253,23 @@ void Window::mouse_button_callback(GLFWwindow* window, int button, int action, i
 			Movement = Rotate;
 		}
 	} else if (action == GLFW_RELEASE) {
-		Movement = None;
+		Movement = Rotate;
 	}
 }
 
 glm::vec3 Window::trackBallMapping(double x, double y)    // The CPoint class is a specific Windows class. Either use separate x and y values for the mouse location, or use a Vector3 in which you ignore the z coordinate.
 {
-	glm::vec3 v;    // Vector v is the synthesized 3D position of the mouse location on the trackball
-	float d;     // this is the depth of the mouse location: the delta between the plane through the center of the trackball and the z position of the mouse
-	v.x = (2.0*x - width) / width;   // this calculates the mouse X position in trackball coordinates, which range from -1 to +1
-	v.y = (height - 2.0*y) / height;   // this does the equivalent to the above for the mouse Y position
-	v.z = 0.0;   // initially the mouse z position is set to zero, but this will change below
-	d = glm::length(v);    // this is the distance from the trackball's origin to the mouse location, without considering depth (=in the plane of the trackball's origin)
-	d = (d<1.0) ? d : 1.0;   // this limits d to values of 1.0 or less to avoid square roots of negative values in the following line
-	v.z = sqrtf(1.001 - d*d);  // this calculates the Z coordinate of the mouse position on the trackball, based on Pythagoras: v.z*v.z + d*d = 1*1
-	v = glm::normalize(v); // Still need to normalize, since we only capped d, not v.
-	return v;  // return the mouse location on the surface of the trackball
+	//glm::vec3 v;    // Vector v is the synthesized 3D position of the mouse location on the trackball
+	//float d;     // this is the depth of the mouse location: the delta between the plane through the center of the trackball and the z position of the mouse
+	//v.x = (2.0*x - width) / width;   // this calculates the mouse X position in trackball coordinates, which range from -1 to +1
+	//v.y = (2.0*y - height) / height;   // this does the equivalent to the above for the mouse Y position
+	//v.z = 0.0;   // initially the mouse z position is set to zero, but this will change below
+	//d = glm::length(v);    // this is the distance from the trackball's origin to the mouse location, without considering depth (=in the plane of the trackball's origin)
+	//d = (d<1.0) ? d : 1.0;   // this limits d to values of 1.0 or less to avoid square roots of negative values in the following line
+	//v.z = sqrtf(1.001 - d*d);  // this calculates the Z coordinate of the mouse position on the trackball, based on Pythagoras: v.z*v.z + d*d = 1*1
+	//v = glm::normalize(v); // Still need to normalize, since we only capped d, not v.
+	glm::vec3 v(x, y, 0);
+	return v / 100.0f;  // return the mouse location on the surface of the trackball
 }
 
 void Window::cursor_position_callback(GLFWwindow * window, double xpos, double ypos)
@@ -289,7 +290,16 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 			rotAxis = glm::cross(lastPoint, currPoint);
 			float rot_angle = velocity;
 			if (!mode) {
-				cam_look_at = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(cam_look_at, 1.0f);
+				xrot += (lastPoint.x - currPoint.x);
+				yrot += (currPoint.y - lastPoint.y);
+				if (yrot > glm::pi<float>() / 2 - 0.01f) {
+					yrot = glm::pi<float>() / 2 - 0.01f;
+				}
+				if (yrot < -glm::pi<float>() / 2  + 0.01f) {
+					yrot = -glm::pi<float>() / 2 + 0.01f;
+				}
+				cam_look_at = glm::rotate(glm::mat4(1.0f), xrot, glm::vec3(0.0f, 1.0f, 0.0f)) * 
+					glm::rotate(glm::mat4(1.0f), yrot, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::vec4(glm::vec3(0.0f, 0.0f, 20.0f), 1.0f);
 				xBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(xBiase, 1.0f);
 				yBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(yBiase, 1.0f);
 				zBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(zBiase, 1.0f);
