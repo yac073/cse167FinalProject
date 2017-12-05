@@ -23,8 +23,10 @@
     <None Include="..\src\controlshader.vert" />
     <None Include="..\src\curveshader.frag" />
     <None Include="..\src\curveshader.vert" />
-    <None Include="..\src\fboshader.frag" />
-    <None Include="..\src\fboshader.vert" />
+    <None Include="..\src\dofshader.frag" />
+    <None Include="..\src\dofshader.vert" />
+    <None Include="..\src\mbshader.frag" />
+    <None Include="..\src\mbshader.vert" />
     <None Include="..\src\shader.frag" />
     <None Include="..\src\shader.vert" />
     <None Include="..\src\skyboxshader.frag" />
@@ -36,6 +38,7 @@
   <ItemGroup>
     <ClInclude Include="..\src\Cube.h" />
     <ClInclude Include="..\src\Curve.h" />
+    <ClInclude Include="..\src\fbo.h" />
     <ClInclude Include="..\src\geometry.h" />
     <ClInclude Include="..\src\Light.h" />
     <ClInclude Include="..\src\main.h" />
@@ -51,6 +54,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\Cube.cpp" />
     <ClCompile Include="..\src\Curve.cpp" />
+    <ClCompile Include="..\src\fbo.cpp" />
     <ClCompile Include="..\src\geometry.cpp" />
     <ClCompile Include="..\src\Light.cpp" />
     <ClCompile Include="..\src\main.cpp" />

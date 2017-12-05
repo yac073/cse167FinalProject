@@ -295,6 +295,8 @@ void Window::display_callback(GLFWwindow* window)
 			glBindVertexArray(vaoQuad);
 			glDisable(GL_DEPTH_TEST);
 			glUseProgram(dofshaderProgram);
+			glUniform1i(glGetUniformLocation(dofshaderProgram, "openbabeijing"), enable8bj);
+			glUniform1i(glGetUniformLocation(dofshaderProgram, "openDOF"), enableDOF);
 			glUniform1f(glGetUniformLocation(dofshaderProgram, "focus"), Window::focal);
 			//bind color map
 			glUniform1i(glGetUniformLocation(dofshaderProgram, "texFramebuffer"), 0);

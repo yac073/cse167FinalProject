@@ -46,10 +46,16 @@
     <None Include="..\src\skymapshader.vert">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="..\src\fboshader.frag">
+    <None Include="..\src\dofshader.frag">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="..\src\fboshader.vert">
+    <None Include="..\src\dofshader.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\src\mbshader.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\src\mbshader.vert">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
@@ -93,6 +99,9 @@
     <ClInclude Include="..\src\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\fbo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Cube.cpp">
@@ -129,6 +138,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fbo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
