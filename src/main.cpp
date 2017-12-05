@@ -65,9 +65,9 @@ void print_versions()
 	std::printf("Supported GLSL version is %s.\n", (char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
 #endif
 }
-
 int main(void)
 {
+	
 	// Create the GLFW window
 	window = Window::create_window(1920, 1080);	
 	// Print OpenGL and GLSL versions

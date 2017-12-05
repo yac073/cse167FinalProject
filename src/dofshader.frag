@@ -2,9 +2,11 @@
 in vec2 Texcoord;
 out vec4 outColor;
 uniform sampler2D texFramebuffer;
+uniform sampler2D tDepth;
 uniform float width;
 uniform float height;
 uniform int openDOF;
+uniform float focus;
 uniform int openbabeijing;
 void enablebabeijing(){
     if (abs(Texcoord.x - 0.5f) < 1.0f / width && abs(Texcoord.y - 0.5f) > 30.0f / height) { outColor = vec4(0.0f);}
@@ -69,11 +71,14 @@ vec4 dof(vec4 col, vec2 aspectcorrect, vec2 dofblur){
     return col / 41.0;
 }
 void main(){
-	vec4 testColor = texture(texFramebuffer, Texcoord);	      
+	vec4 testColor = texture(texFramebuffer, Texcoord);	
+	
     vec2 aspectcorrect = vec2( 1.0, 16.0f / 9.0f );
-
-    float factor = 1.0f - abs(testColor.a);
-    vec2 dofblur = vec2 ( clamp( factor * 0.05f, -.01f, .01f ) );
+	vec4 depth1 = texture2D(tDepth, Texcoord );
+    
+    float factor = depth1.x - focus;
+    
+    vec2 dofblur = vec2 ( clamp( factor * 1/5.6f, -0.05f, 0.05f ) );
     
     vec4 col = vec4( 0.0f );
     col += texture(texFramebuffer, Texcoord);

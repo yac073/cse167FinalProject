@@ -60,23 +60,23 @@ void Curve::setPointsToDefault()
 	points[1] = glm::vec3(2.0f, 2.0f, -2.0f);
 	points[2] = glm::vec3(4.0f, 4.0f, -4.0f);
 
-	points[4] = glm::vec3(8.0f, 8.0f, -8.0f);
-	points[5] = glm::vec3(10.0f, 6.0f, -10.0f);
+	points[4] = glm::vec3(8.0f, 8.0f, -80.0f);
+	points[5] = glm::vec3(10.0f, 6.0f, -100.0f);
 
-	points[7] = glm::vec3(10.0f, 2.0f, -14.0f);
-	points[8] = glm::vec3(8.0f, 0.0f, -16.0f);
+	points[7] = glm::vec3(10.0f, 2.0f, -240.0f);
+	points[8] = glm::vec3(8.0f, 0.0f, -260.0f);
 
-	points[10] = glm::vec3(4.0f, -2.0f, -50.0f);
-	points[11] = glm::vec3(2.0f, -4.0f, -52.0f);
+	points[10] = glm::vec3(4.0f, -2.0f, -500.0f);
+	points[11] = glm::vec3(2.0f, -4.0f, -520.0f);
 
-	points[13] = glm::vec3(-2.0f, -8.0f, -22.0f);
-	points[14] = glm::vec3(-4.0f, -6.0f, -20.0f);
+	points[13] = glm::vec3(-2.0f, -8.0f, -220.0f);
+	points[14] = glm::vec3(-4.0f, -6.0f, -200.0f);
 
-	points[16] = glm::vec3(-8.0f, -2.0f, -16.0f);
-	points[17] = glm::vec3(-10.0f, 0.0f, -14.0f);
+	points[16] = glm::vec3(-8.0f, -2.0f, -160.0f);
+	points[17] = glm::vec3(-10.0f, 0.0f, -140.0f);
 
-	points[19] = glm::vec3(-10.0f, 4.0f, -10.0f);
-	points[20] = glm::vec3(-8.0f, 6.0f, -8.0f);
+	points[19] = glm::vec3(-10.0f, 4.0f, -50.0f);
+	points[20] = glm::vec3(-8.0f, 6.0f, -80.0f);
 
 	points[22] = glm::vec3(-4.0f, 6.0f, -4.0f);
 	points[23] = glm::vec3(-2.0f, 4.0f, -2.0f);

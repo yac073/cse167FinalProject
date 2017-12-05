@@ -1,6 +1,6 @@
 #ifndef _WINDOW_H_
 #define _WINDOW_H_
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 
 #define GLFW_INCLUDE_GLEXT
@@ -24,6 +24,7 @@
 #include "skymappingOBJ.h"
 #define STBI_ASSERT(x)
 #include "stb_image.h"
+#include "fbo.h"
 
 class Window
 {
@@ -46,6 +47,8 @@ public:
 	static glm::mat4 pMatrix;
 	static glm::vec3 cam_pos;
 	static void initialize_objects();
+	static int enableDOF;
+	static int enableMB;
 	static void RefreshBallPos();
 	static OBJObject* currentOBJ;
 	static OBJObject* currentLight;

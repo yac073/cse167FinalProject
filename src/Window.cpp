@@ -6,23 +6,22 @@ Curve * curve;
 SkymappingOBJ* obj;
 //OBJObject* cubeOBJ;
 Transform* controls;
-GLint shaderProgram, skyboxshaderProgram, curveshaderProgram, controlshaderProgram, skymapShaderProgram, screenShaderProgram;
+GLint shaderProgram, skyboxshaderProgram, curveshaderProgram, controlshaderProgram, skymapShaderProgram, dofshaderProgram, mbshaderProgram;
 int robotNum, localAngle, grandAngle;
 bool culling;
 float robotScale;
 float fov = 45.0f;
 bool rectCull = false;
 int selected;
-double lastUpdatetime;
+double lastUpdatetime, dTime;
 bool shouldUpdate;
 bool shouldAllowManu = true;
-float xrot = 0, yrot = 0;
-GLuint frameBuffers[2];
-GLuint texColorBuffers[2];
-GLuint rboDepthStencil;
+float xrot = 0, yrot = 0, dX, dY;
 GLuint vaoQuad, vboQuad;
-GLint uniTexOffset;
-int enableDOF = 1, enable8bj = 0;
+int enable8bj = 0;
+bool onlyfortest = false;
+SingleSampleFbo* ssFbo;
+list<SingleSampleFbo*>msFbo;
 
 // On some systems you need to change this to the absolute path
 #define VERTEX_SHADER_PATH "../src/shader.vert"
@@ -35,8 +34,10 @@ int enableDOF = 1, enable8bj = 0;
 #define CONTROL_FRAGMENT_SHADER_PATH "../src/controlshader.frag"
 #define SKYMAP_VERTEX_SHADER_PATH "../src/skymapshader.vert"
 #define SKYMAP_FRAGMENT_SHADER_PATH "../src/skymapshader.frag"
-#define FBO_VERTEX_SHADER_PATH "../src/fboshader.vert"
-#define FBO_FRAGMENT_SHADER_PATH "../src/fboshader.frag"
+#define DOF_VERTEX_SHADER_PATH "../src/dofshader.vert"
+#define DOF_FRAGMENT_SHADER_PATH "../src/dofshader.frag"
+#define MB_VERTEX_SHADER_PATH "../src/mbshader.vert"
+#define MB_FRAGMENT_SHADER_PATH "../src/mbshader.frag"
 // Default camera parameters
 glm::vec3 Window::cam_pos(0.0f, 0.0f, 0.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
@@ -57,8 +58,10 @@ glm::vec3 zBiase(0.0f, 0.0f, 1.0f);
 
 glm::mat4 Window::P;
 glm::mat4 Window::V;
+int Window::enableDOF = 1;
+int Window::enableMB = 0;
 float Window::focal;
-
+const int MOTION_BLUR_SAMPLE_NUM = 9;
 GLfloat quadVertices[] = {
 	-1.0f,  1.0f,  0.0f, 1.0f,
 	1.0f,  1.0f,  1.0f, 1.0f,
@@ -79,6 +82,7 @@ void specifyScreenVertexAttributes(GLuint shaderProgram)
 	glEnableVertexAttribArray(texAttrib);
 	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 }
+
 void Window::initialize_objects()
 {	
 	cube = new Cube();
@@ -88,7 +92,8 @@ void Window::initialize_objects()
 	curveshaderProgram = LoadShaders(CURVE_VERTEX_SHADER_PATH, CURVE_FRAGMENT_SHADER_PATH);
 	controlshaderProgram = LoadShaders(CONTROL_VERTEX_SHADER_PATH, CONTROL_FRAGMENT_SHADER_PATH);
 	skymapShaderProgram = LoadShaders(SKYMAP_VERTEX_SHADER_PATH, SKYMAP_FRAGMENT_SHADER_PATH);
-	screenShaderProgram = LoadShaders(FBO_VERTEX_SHADER_PATH, FBO_FRAGMENT_SHADER_PATH);
+	dofshaderProgram = LoadShaders(DOF_VERTEX_SHADER_PATH, DOF_FRAGMENT_SHADER_PATH);
+	mbshaderProgram = LoadShaders(MB_VERTEX_SHADER_PATH, MB_FRAGMENT_SHADER_PATH);
 	sphere = new OBJObject("../res/sphere.obj");
 	obj = new SkymappingOBJ("../res/sphere.obj");
 	fov = 45.0f;
@@ -99,47 +104,20 @@ void Window::initialize_objects()
 	controls = loadControls(glm::mat4(1.0f));
 	obj->curvePts = curve->vertices;
 	RefreshBallPos();	
-	glGenFramebuffers(2, frameBuffers);
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
-
-	// Create two textures to hold color buffers
-	glGenTextures(2, texColorBuffers);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
-
-	// Set up the second framebuffer's color buffer
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[1], 0);
-
-	// Set up the first framebuffer's color buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[0], 0);
-
-	// Create first framebuffer's Renderbuffer Object to hold depth and stencil buffers
-	glGenRenderbuffers(1, &rboDepthStencil);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::width, Window::height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil);
+	auto fbo = new SingleSampleFbo(Window::width, Window::height);
+	ssFbo = new SingleSampleFbo(Window::width, Window::height);
+	msFbo.push_back(fbo);
 	glGenVertexArrays(1, &vaoQuad);
 	glGenBuffers(1, &vboQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, vboQuad);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
 	glBindVertexArray(vaoQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, vboQuad);
-	specifyScreenVertexAttributes(screenShaderProgram);
-	uniTexOffset = glGetUniformLocation(screenShaderProgram, "texOffset");
-	focal = 0.0f;	
+	specifyScreenVertexAttributes(dofshaderProgram);
+	specifyScreenVertexAttributes(mbshaderProgram);
+	focal = 0.972656f;	
 }
+
 
 void Window::RefreshBallPos()
 {
@@ -156,16 +134,16 @@ void Window::clean_up()
 	delete(cube);
 	delete(curve);
 	delete(controls);
-	delete(obj);
+	delete(obj);	
+	delete(ssFbo);
+
 	glDeleteProgram(shaderProgram);
 	glDeleteProgram(skyboxshaderProgram);
 	glDeleteProgram(curveshaderProgram);
 	glDeleteProgram(controlshaderProgram);
 	glDeleteProgram(skymapShaderProgram);
-	glDeleteProgram(screenShaderProgram);
-	glDeleteFramebuffers(2, frameBuffers);
-	glDeleteTextures(2, texColorBuffers);
-	glDeleteRenderbuffers(1, &rboDepthStencil);
+	glDeleteProgram(dofshaderProgram);
+	glDeleteProgram(mbshaderProgram);
 	glDeleteVertexArrays(1, &vaoQuad);
 	glDeleteBuffers(1, &vboQuad);
 
@@ -232,96 +210,125 @@ void Window::resize_callback(GLFWwindow* window, int width, int height)
 		V = glm::lookAt(cam_pos, cam_look_at, cam_up);
 	}
 	//reinit fbo
-	if (frameBuffers[0] != 0) {
-		glDeleteFramebuffers(2, frameBuffers);
-		glDeleteTextures(2, texColorBuffers);
-		glDeleteRenderbuffers(1, &rboDepthStencil);
-
-		glGenFramebuffers(2, frameBuffers);
-		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
-
-		// Create two textures to hold color buffers
-		glGenTextures(2, texColorBuffers);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
-
-		// Set up the second framebuffer's color buffer
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[1], 0);
-
-		// Set up the first framebuffer's color buffer
-		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[0], 0);
-
-		// Create first framebuffer's Renderbuffer Object to hold depth and stencil buffers
-		glGenRenderbuffers(1, &rboDepthStencil);
-		glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::width, Window::height);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil);
+	if (msFbo.size() > 0) {
+		ssFbo->refresh(Window::width, Window::height);
+		while (msFbo.size() > 0) {
+			auto var = msFbo.front();
+			delete(var);
+			msFbo.pop_front();
+		}
 	}
-	if (screenShaderProgram != 0) {
-		glUniform1f(glGetUniformLocation(screenShaderProgram, "width"), Window::width);
-		glUniform1f(glGetUniformLocation(screenShaderProgram, "height"), Window::height);
+	if (dofshaderProgram != 0) {
+		glUniform1f(glGetUniformLocation(dofshaderProgram, "width"), Window::width);
+		glUniform1f(glGetUniformLocation(dofshaderProgram, "height"), Window::height);
+	}
+	if (mbshaderProgram != 0) {
+		glUniform1f(glGetUniformLocation(mbshaderProgram, "width"), Window::width);
+		glUniform1f(glGetUniformLocation(mbshaderProgram, "height"), Window::height);
 	}
 }
 
 void Window::idle_callback()
 {
 	double nowTime = glfwGetTime();
+	//cout << "fps " << 1.0f / (nowTime - lastUpdatetime) << endl;
 	if (shouldUpdate) {
 		obj->update(nowTime - lastUpdatetime);
-		//cout << "speed " << obj->speed << " m/s" << endl;
 	}
 	if (!shouldAllowManu) {
 		cam_pos = obj->curvePts[obj->index] - glm::normalize(obj->facingDir) * 5.0f;
 		P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
 		V = glm::lookAt(cam_pos, obj->curvePts[obj->index] + (obj->facingDir) * 10.0f, cam_up);
 	}
+	dTime = nowTime - lastUpdatetime;
 	lastUpdatetime = nowTime;
 }
-
 void Window::display_callback(GLFWwindow* window)
 {
-	glUniform1f(glGetUniformLocation(screenShaderProgram, "width"), Window::width);
-	glUniform1f(glGetUniformLocation(screenShaderProgram, "height"), Window::height);
-	// Clear the color and depth buffers
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-
-	curve->draw(curveshaderProgram, obj->friction);
-	controls->draw(glm::mat4(1.0f));
-	obj->draw(skymapShaderProgram);
-	cube->draw(skyboxshaderProgram);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glBindVertexArray(vaoQuad);
-	glDisable(GL_DEPTH_TEST);
-	glUseProgram(screenShaderProgram);
-	glUniform1i(glGetUniformLocation(screenShaderProgram, "openbabeijing"), enable8bj);
-	glUniform1i(glGetUniformLocation(screenShaderProgram, "openDOF"), enableDOF);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
-	glUniform2f(uniTexOffset, 1.0f/ Window::width, 0.0f);
-
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	//Bind default framebuffer and draw contents of second framebuffer, blurring vertically
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
-	//glUniform2f(uniTexOffset, 0.0f, 1.0f / Window::height);
-
-	//glDrawArrays(GL_TRIANGLES, 0, 6);
+	if (onlyfortest) return;
+	glUniform1f(glGetUniformLocation(dofshaderProgram, "width"), Window::width);
+	glUniform1f(glGetUniformLocation(dofshaderProgram, "height"), Window::height);
+	glUniform1f(glGetUniformLocation(mbshaderProgram, "width"), Window::width);
+	glUniform1f(glGetUniformLocation(mbshaderProgram, "height"), Window::height);
 	
+	//render a scene
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, ssFbo->fbo);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		//normal draw
+		curve->draw(curveshaderProgram, obj->friction);
+		controls->draw(glm::mat4(1.0f));
+		obj->draw(skymapShaderProgram);
+		cube->draw(skyboxshaderProgram);
+	}
+
+	if (enableMB == 0) {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindVertexArray(vaoQuad);
+		glDisable(GL_DEPTH_TEST);
+		glUseProgram(dofshaderProgram);
+		glUniform1i(glGetUniformLocation(dofshaderProgram, "openbabeijing"), enable8bj);
+		glUniform1i(glGetUniformLocation(dofshaderProgram, "openDOF"), enableDOF);
+		glUniform1f(glGetUniformLocation(dofshaderProgram, "focus"), Window::focal);
+		//bind color map
+		glUniform1i(glGetUniformLocation(dofshaderProgram, "texFramebuffer"), 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ssFbo->colormap);
+		//bind depth map
+		glUniform1i(glGetUniformLocation(dofshaderProgram, "tDepth"), 1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ssFbo->depthmap);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+	}
+	else {
+		if (msFbo.size() == MOTION_BLUR_SAMPLE_NUM) {
+			auto lastone = msFbo.back();			
+			delete(lastone);
+			msFbo.pop_back();
+		}
+		//reder the scene to msFbo
+		while (msFbo.size() < MOTION_BLUR_SAMPLE_NUM){			
+			msFbo.push_front(new SingleSampleFbo(Window::width, Window::height));
+			glBindFramebuffer(GL_FRAMEBUFFER, msFbo.front()->fbo);
+			glBindVertexArray(vaoQuad);
+			glDisable(GL_DEPTH_TEST);
+			glUseProgram(dofshaderProgram);
+			glUniform1f(glGetUniformLocation(dofshaderProgram, "focus"), Window::focal);
+			//bind color map
+			glUniform1i(glGetUniformLocation(dofshaderProgram, "texFramebuffer"), 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, ssFbo->colormap);
+			//bind depth map
+			glUniform1i(glGetUniformLocation(dofshaderProgram, "tDepth"), 1);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, ssFbo->depthmap);
+
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindVertexArray(vaoQuad);
+		glDisable(GL_DEPTH_TEST);
+		glUseProgram(mbshaderProgram);
+		//bind color map
+		glUniform1i(glGetUniformLocation(mbshaderProgram, "numOfSample"), msFbo.size());
+		int i = 0;
+		typedef list<SingleSampleFbo*>::iterator FboIt;
+		for (FboIt j = msFbo.begin(); j != msFbo.end(); ++j) {		
+			char integer_string[32];
+			sprintf(integer_string, "%d", i);
+			char other_string[64] = "texFramebuffer"; 
+			strcat(other_string, integer_string); 
+			glUniform1i(glGetUniformLocation(mbshaderProgram, other_string), i);
+			glActiveTexture(GL_TEXTURE0 + i);
+			auto x = *j;
+			glBindTexture(GL_TEXTURE_2D, x->colormap);
+			i++;
+		}
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+	}
+
 
 	// Gets events, including input such as keyboard and mouse or window resizing
 	glfwPollEvents();
@@ -365,7 +372,22 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 			focal = 10000;
 		}
 		if (key == GLFW_KEY_E) {
-			focal = 0;
+			focal = 0.972656;
+		}
+		if (key == GLFW_KEY_1) {
+			enableDOF = !enableDOF;
+			cout << "DOF " << (enableDOF == 1 ? " Enabled" : "Disabled") << endl;
+		}
+		if (key == GLFW_KEY_2) {
+			enableMB = !enableMB;
+			cout << "Motion blur " << (enableMB == 1 ? " Enabled" : "Disabled") << endl;
+			if (!enableMB) {
+				while (msFbo.size() > 0) {
+					auto var = msFbo.front();
+					delete(var);
+					msFbo.pop_front();
+				}
+			}
 		}
 	}
 }
@@ -416,20 +438,22 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 			glm::vec3 rotAxis;
 			rotAxis = glm::cross(lastPoint, currPoint);
 			float rot_angle = velocity;
+			float tempx, tempy;
 			if (!mode) {
-				xrot += (lastPoint.x - currPoint.x);
-				yrot += (lastPoint.y - currPoint.y);
-				if (yrot > glm::pi<float>() / 2 - 0.01f) {
-					yrot = glm::pi<float>() / 2 - 0.01f;
+				tempx = xrot + (lastPoint.x - currPoint.x);
+				tempy = yrot + (lastPoint.y - currPoint.y);
+				if (tempy > glm::pi<float>() / 2 - 0.01f) {
+					tempy = glm::pi<float>() / 2 - 0.01f;
 				}
-				if (yrot < -glm::pi<float>() / 2  + 0.01f) {
-					yrot = -glm::pi<float>() / 2 + 0.01f;
+				if (tempy < -glm::pi<float>() / 2  + 0.01f) {
+					tempy = -glm::pi<float>() / 2 + 0.01f;
 				}
+				dX = tempx - xrot;
+				dY = tempy - yrot;
+				xrot = tempx;
+				yrot = tempy;
 				cam_look_at = glm::rotate(glm::mat4(1.0f), xrot, glm::vec3(0.0f, 1.0f, 0.0f)) * 
 					glm::rotate(glm::mat4(1.0f), yrot, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::vec4(glm::vec3(0.0f, 0.0f, -20.0f), 1.0f);
-				xBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(xBiase, 1.0f);
-				yBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(yBiase, 1.0f);
-				zBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(zBiase, 1.0f);
 				P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
 				V = glm::lookAt(cam_pos, cam_look_at, cam_up);
 			}
@@ -471,10 +495,10 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	if (yoffset > 0) {
-		focal++;
+		focal += 1.0f / 256.0f;
 	}
 	else {
-		focal--;
+		focal -= 1.0f / 256.0f;
 
 	}
 	P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
