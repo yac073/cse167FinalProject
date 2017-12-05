@@ -13,5 +13,7 @@
 #include <stdio.h>
 #include "window.h"
 #include "GL/glut.h"
-
+#include "../audio/irrKlang.h"
+#include <iostream>
+using namespace irrklang;
 #endif
