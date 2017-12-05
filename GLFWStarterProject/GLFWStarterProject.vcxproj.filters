@@ -46,6 +46,12 @@
     <None Include="..\src\skymapshader.vert">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="..\src\fboshader.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\src\fboshader.vert">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Cube.h">

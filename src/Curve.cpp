@@ -66,8 +66,8 @@ void Curve::setPointsToDefault()
 	points[7] = glm::vec3(10.0f, 2.0f, -14.0f);
 	points[8] = glm::vec3(8.0f, 0.0f, -16.0f);
 
-	points[10] = glm::vec3(4.0f, -2.0f, -20.0f);
-	points[11] = glm::vec3(2.0f, -4.0f, -22.0f);
+	points[10] = glm::vec3(4.0f, -2.0f, -50.0f);
+	points[11] = glm::vec3(2.0f, -4.0f, -52.0f);
 
 	points[13] = glm::vec3(-2.0f, -8.0f, -22.0f);
 	points[14] = glm::vec3(-4.0f, -6.0f, -20.0f);
@@ -98,6 +98,7 @@ void Curve::draw(GLuint shaderProgram, bool hasFriction)
 	glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
 	glUniformMatrix4fv(uModelview, 1, GL_FALSE, &modelview[0][0]);
 	glUniformMatrix4fv(uModel, 1, GL_FALSE, &toWorld[0][0]);
+	glUniform1f(glGetUniformLocation(shaderProgram, "focal"), Window::focal);
 	glBindVertexArray(VAO);
 	glUniform1i(glGetUniformLocation(shaderProgram, "isCurve"), 1);
 	if (!hasFriction) {

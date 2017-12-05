@@ -42,6 +42,7 @@ void Cube::draw(GLuint shaderProgram)
 	// Now send these values to the shader program
 	glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
 	glUniformMatrix4fv(uModelview, 1, GL_FALSE, &modelview[0][0]);
+	glUniform1f(glGetUniformLocation(shaderProgram, "focal"), Window::focal);
 	//glUniformMatrix4fv(uModel, 1, GL_FALSE, &toWorld[0][0]);
 	glBindVertexArray(VAO);
 	glActiveTexture(GL_TEXTURE0);

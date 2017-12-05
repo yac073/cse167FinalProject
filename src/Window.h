@@ -49,6 +49,7 @@ public:
 	static void RefreshBallPos();
 	static OBJObject* currentOBJ;
 	static OBJObject* currentLight;
+	static float focal;
 	static void clean_up();
 	static GLFWwindow* create_window(int width, int height);
 	static void resize_callback(GLFWwindow* window, int width, int height);

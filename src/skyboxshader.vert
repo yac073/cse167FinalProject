@@ -2,13 +2,18 @@
 layout (location = 0) in vec3 aPos;
 
 out vec3 TexCoords;
+out float z;
 
 uniform mat4 projection;
 uniform mat4 view;
+uniform float focal;
 
 void main()
 {
     TexCoords = aPos;
     vec4 pos = projection * view * vec4(aPos, 1.0);
     gl_Position = pos.xyww;
+	if (focal == 10000){ z = 0; }else {
+		z = (view * vec4(aPos, 1.0)).z - focal;
+	}
 } 

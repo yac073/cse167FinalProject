@@ -13,15 +13,18 @@ layout (location = 1) in vec3 aNormal;
 uniform mat4 projection;
 uniform mat4 modelview;
 uniform mat4 model;
+uniform float focal;
 
 // Outputs of the vertex shader are the inputs of the same name of the fragment shader.
 // The default output, gl_Position, should be assigned something. You can define as many
 // extra outputs as you need.
 out vec3 Normal;
+out float z;
 
 void main()
 {
     // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
     gl_Position = projection * modelview * vec4(position.x, position.y, position.z, 1.0);
     Normal = normalize(mat3(transpose(inverse(model))) * aNormal);
+	z = length(modelview *  vec4(position.x, position.y, position.z, 1.0)) - focal;
 }

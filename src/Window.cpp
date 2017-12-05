@@ -1,12 +1,12 @@
 #include "window.h"
-const char* window_title = "GLFW Starter Project";
+const char* window_title = "CSE167FinalProject";
 Cube * cube;
 OBJObject* sphere;
 Curve * curve;
 SkymappingOBJ* obj;
 //OBJObject* cubeOBJ;
 Transform* controls;
-GLint shaderProgram, skyboxshaderProgram, curveshaderProgram, controlshaderProgram, skymapShaderProgram;
+GLint shaderProgram, skyboxshaderProgram, curveshaderProgram, controlshaderProgram, skymapShaderProgram, screenShaderProgram;
 int robotNum, localAngle, grandAngle;
 bool culling;
 float robotScale;
@@ -17,6 +17,12 @@ double lastUpdatetime;
 bool shouldUpdate;
 bool shouldAllowManu = true;
 float xrot = 0, yrot = 0;
+GLuint frameBuffers[2];
+GLuint texColorBuffers[2];
+GLuint rboDepthStencil;
+GLuint vaoQuad, vboQuad;
+GLint uniTexOffset;
+int enableDOF = 1, enable8bj = 0;
 
 // On some systems you need to change this to the absolute path
 #define VERTEX_SHADER_PATH "../src/shader.vert"
@@ -29,10 +35,11 @@ float xrot = 0, yrot = 0;
 #define CONTROL_FRAGMENT_SHADER_PATH "../src/controlshader.frag"
 #define SKYMAP_VERTEX_SHADER_PATH "../src/skymapshader.vert"
 #define SKYMAP_FRAGMENT_SHADER_PATH "../src/skymapshader.frag"
-
+#define FBO_VERTEX_SHADER_PATH "../src/fboshader.vert"
+#define FBO_FRAGMENT_SHADER_PATH "../src/fboshader.frag"
 // Default camera parameters
 glm::vec3 Window::cam_pos(0.0f, 0.0f, 0.0f);		// e  | Position of camera
-glm::vec3 cam_look_at(0.0f, 0.0f, 20.0f);	// d  | This is where the camera looks at
+glm::vec3 cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
 int Window::width;
@@ -50,9 +57,30 @@ glm::vec3 zBiase(0.0f, 0.0f, 1.0f);
 
 glm::mat4 Window::P;
 glm::mat4 Window::V;
+float Window::focal;
 
-void Window::initialize_objects()
+GLfloat quadVertices[] = {
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	1.0f,  1.0f,  1.0f, 1.0f,
+	1.0f, -1.0f,  1.0f, 0.0f,
+
+	1.0f, -1.0f,  1.0f, 0.0f,
+	-1.0f, -1.0f,  0.0f, 0.0f,
+	-1.0f,  1.0f,  0.0f, 1.0f
+};
+
+void specifyScreenVertexAttributes(GLuint shaderProgram)
 {
+	GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+	glEnableVertexAttribArray(posAttrib);
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+
+	GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+	glEnableVertexAttribArray(texAttrib);
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+}
+void Window::initialize_objects()
+{	
 	cube = new Cube();
 	// Load the shader program. Make sure you have the correct filepath up top
 	shaderProgram = LoadShaders(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
@@ -60,6 +88,7 @@ void Window::initialize_objects()
 	curveshaderProgram = LoadShaders(CURVE_VERTEX_SHADER_PATH, CURVE_FRAGMENT_SHADER_PATH);
 	controlshaderProgram = LoadShaders(CONTROL_VERTEX_SHADER_PATH, CONTROL_FRAGMENT_SHADER_PATH);
 	skymapShaderProgram = LoadShaders(SKYMAP_VERTEX_SHADER_PATH, SKYMAP_FRAGMENT_SHADER_PATH);
+	screenShaderProgram = LoadShaders(FBO_VERTEX_SHADER_PATH, FBO_FRAGMENT_SHADER_PATH);
 	sphere = new OBJObject("../res/sphere.obj");
 	obj = new SkymappingOBJ("../res/sphere.obj");
 	fov = 45.0f;
@@ -70,7 +99,46 @@ void Window::initialize_objects()
 	controls = loadControls(glm::mat4(1.0f));
 	obj->curvePts = curve->vertices;
 	RefreshBallPos();	
-	lastUpdatetime = glfwGetTime();	
+	glGenFramebuffers(2, frameBuffers);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
+
+	// Create two textures to hold color buffers
+	glGenTextures(2, texColorBuffers);
+	glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
+
+	// Set up the second framebuffer's color buffer
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[1], 0);
+
+	// Set up the first framebuffer's color buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
+	glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[0], 0);
+
+	// Create first framebuffer's Renderbuffer Object to hold depth and stencil buffers
+	glGenRenderbuffers(1, &rboDepthStencil);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::width, Window::height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil);
+	glGenVertexArrays(1, &vaoQuad);
+	glGenBuffers(1, &vboQuad);
+	glBindBuffer(GL_ARRAY_BUFFER, vboQuad);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+	glBindVertexArray(vaoQuad);
+	glBindBuffer(GL_ARRAY_BUFFER, vboQuad);
+	specifyScreenVertexAttributes(screenShaderProgram);
+	uniTexOffset = glGetUniformLocation(screenShaderProgram, "texOffset");
+	focal = 0.0f;	
 }
 
 void Window::RefreshBallPos()
@@ -94,6 +162,13 @@ void Window::clean_up()
 	glDeleteProgram(curveshaderProgram);
 	glDeleteProgram(controlshaderProgram);
 	glDeleteProgram(skymapShaderProgram);
+	glDeleteProgram(screenShaderProgram);
+	glDeleteFramebuffers(2, frameBuffers);
+	glDeleteTextures(2, texColorBuffers);
+	glDeleteRenderbuffers(1, &rboDepthStencil);
+	glDeleteVertexArrays(1, &vaoQuad);
+	glDeleteBuffers(1, &vboQuad);
+
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -119,7 +194,6 @@ GLFWwindow* Window::create_window(int width, int height)
 
 	// Create the GLFW window
 	GLFWwindow* window = glfwCreateWindow(width, height, window_title, NULL, NULL);
-
 	// Check if the window could not be created
 	if (!window)
 	{
@@ -157,6 +231,48 @@ void Window::resize_callback(GLFWwindow* window, int width, int height)
 		P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
 		V = glm::lookAt(cam_pos, cam_look_at, cam_up);
 	}
+	//reinit fbo
+	if (frameBuffers[0] != 0) {
+		glDeleteFramebuffers(2, frameBuffers);
+		glDeleteTextures(2, texColorBuffers);
+		glDeleteRenderbuffers(1, &rboDepthStencil);
+
+		glGenFramebuffers(2, frameBuffers);
+		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
+
+		// Create two textures to hold color buffers
+		glGenTextures(2, texColorBuffers);
+		glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
+
+		// Set up the second framebuffer's color buffer
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[1], 0);
+
+		// Set up the first framebuffer's color buffer
+		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
+		glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Window::width, Window::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[0], 0);
+
+		// Create first framebuffer's Renderbuffer Object to hold depth and stencil buffers
+		glGenRenderbuffers(1, &rboDepthStencil);
+		glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::width, Window::height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil);
+	}
+	if (screenShaderProgram != 0) {
+		glUniform1f(glGetUniformLocation(screenShaderProgram, "width"), Window::width);
+		glUniform1f(glGetUniformLocation(screenShaderProgram, "height"), Window::height);
+	}
 }
 
 void Window::idle_callback()
@@ -176,14 +292,35 @@ void Window::idle_callback()
 
 void Window::display_callback(GLFWwindow* window)
 {
+	glUniform1f(glGetUniformLocation(screenShaderProgram, "width"), Window::width);
+	glUniform1f(glGetUniformLocation(screenShaderProgram, "height"), Window::height);
 	// Clear the color and depth buffers
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 
 	curve->draw(curveshaderProgram, obj->friction);
 	controls->draw(glm::mat4(1.0f));
 	obj->draw(skymapShaderProgram);
-	// Render the cube
 	cube->draw(skyboxshaderProgram);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindVertexArray(vaoQuad);
+	glDisable(GL_DEPTH_TEST);
+	glUseProgram(screenShaderProgram);
+	glUniform1i(glGetUniformLocation(screenShaderProgram, "openbabeijing"), enable8bj);
+	glUniform1i(glGetUniformLocation(screenShaderProgram, "openDOF"), enableDOF);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
+	glUniform2f(uniTexOffset, 1.0f/ Window::width, 0.0f);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	//Bind default framebuffer and draw contents of second framebuffer, blurring vertically
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
+	//glUniform2f(uniTexOffset, 0.0f, 1.0f / Window::height);
+
+	//glDrawArrays(GL_TRIANGLES, 0, 6);
 	
 
 	// Gets events, including input such as keyboard and mouse or window resizing
@@ -197,7 +334,6 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	// Check for a key press
 	if (action == GLFW_PRESS)
 	{
-		Movement = None;
 		// Check if escape was pressed
 		if (key == GLFW_KEY_ESCAPE)
 		{			
@@ -224,8 +360,13 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 		}
 		if (key == GLFW_KEY_F1) {
 			shouldAllowManu = false;
+		}		
+		if (key == GLFW_KEY_Q) {
+			focal = 10000;
 		}
-		
+		if (key == GLFW_KEY_E) {
+			focal = 0;
+		}
 	}
 }
 
@@ -234,26 +375,12 @@ void Window::mouse_button_callback(GLFWwindow* window, int button, int action, i
 	glm::dvec2 currPos;
 	glfwGetCursorPos(window, &currPos.x, &currPos.y);
 	lastPoint = trackBallMapping(currPos.x, currPos.y);
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		controls->tick();
-		controls->draw(glm::mat4(1.0f));
-		unsigned char color[4];
-		glReadPixels(currPos.x, Window::height - currPos.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &color);
-		if ((unsigned) color[0] > 0) {
-			cout << (unsigned)color[0] << endl;
-		}
-		controls->tick();
-		if ((unsigned)color[0] % 10 == 0 && (unsigned)color[0] > 0) {
-			lastPoint = glm::vec3(currPos.x, currPos.y, 0.0f);
-			Movement = Translate;
-			selected = (unsigned)color[0] / 10 - 1;
-		}
-		else {
-			Movement = Rotate;
-		}
-	} else if (action == GLFW_RELEASE) {
-		Movement = Rotate;
+	Movement = Rotate;
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+		enable8bj = 1;
+	}
+	else if (action == GLFW_RELEASE) {
+		enable8bj = 0;
 	}
 }
 
@@ -291,7 +418,7 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 			float rot_angle = velocity;
 			if (!mode) {
 				xrot += (lastPoint.x - currPoint.x);
-				yrot += (currPoint.y - lastPoint.y);
+				yrot += (lastPoint.y - currPoint.y);
 				if (yrot > glm::pi<float>() / 2 - 0.01f) {
 					yrot = glm::pi<float>() / 2 - 0.01f;
 				}
@@ -299,7 +426,7 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 					yrot = -glm::pi<float>() / 2 + 0.01f;
 				}
 				cam_look_at = glm::rotate(glm::mat4(1.0f), xrot, glm::vec3(0.0f, 1.0f, 0.0f)) * 
-					glm::rotate(glm::mat4(1.0f), yrot, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::vec4(glm::vec3(0.0f, 0.0f, 20.0f), 1.0f);
+					glm::rotate(glm::mat4(1.0f), yrot, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::vec4(glm::vec3(0.0f, 0.0f, -20.0f), 1.0f);
 				xBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(xBiase, 1.0f);
 				yBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(yBiase, 1.0f);
 				zBiase = glm::rotate(glm::mat4(1.0f), -velocity, rotAxis) * glm::vec4(zBiase, 1.0f);
@@ -344,10 +471,10 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	if (yoffset > 0) {
-		cam_pos = glm::scale(glm::mat4(1.0f), glm::vec3(1.2f)) * glm::vec4(cam_pos, 1.0f);
+		focal++;
 	}
 	else {
-		cam_pos = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f / 1.2f)) * glm::vec4(cam_pos, 1.0f);
+		focal--;
 
 	}
 	P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);

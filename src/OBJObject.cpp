@@ -133,9 +133,10 @@ void OBJObject::draw(GLuint shaderProgram, bool isAlpha, bool isInter, int id)
 
 		// Now draw the cube. We simply need to bind the VAO associated with it.
 		glBindVertexArray(VAO);
-		glUniform1i(glGetUniformLocation(shaderProgram, "isAlpha"), isAlpha? 1 : 0);
+		glUniform1i(glGetUniformLocation(shaderProgram, "isAlpha"), 0);
 		glUniform1i(glGetUniformLocation(shaderProgram, "isInter"), isInter ? 1 : 0);
 		glUniform1i(glGetUniformLocation(shaderProgram, "id"), id);
+		glUniform1f(glGetUniformLocation(shaderProgram, "focal"), Window::focal);
 		// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 		// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
