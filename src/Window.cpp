@@ -403,7 +403,7 @@ void Window::mouse_button_callback(GLFWwindow* window, int button, int action, i
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
 		enable8bj = 1;
 	}
-	else if (action == GLFW_RELEASE) {
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
 		enable8bj = 0;
 	}
 }
