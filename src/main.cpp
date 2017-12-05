@@ -78,7 +78,7 @@ int main(void)
 	setup_opengl_settings();
 	// Initialize objects/pointers for rendering
 	Window::initialize_objects();
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	// Loop while GLFW window should stay open
 	while (!glfwWindowShouldClose(window))
 	{

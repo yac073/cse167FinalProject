@@ -116,6 +116,7 @@ void Window::initialize_objects()
 	specifyScreenVertexAttributes(dofshaderProgram);
 	specifyScreenVertexAttributes(mbshaderProgram);
 	focal = 0.972656f;	
+	Movement = Rotate;
 }
 
 
@@ -171,7 +172,7 @@ GLFWwindow* Window::create_window(int width, int height)
 #endif
 
 	// Create the GLFW window
-	GLFWwindow* window = glfwCreateWindow(width, height, window_title, NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, window_title, glfwGetPrimaryMonitor(), NULL);
 	// Check if the window could not be created
 	if (!window)
 	{
@@ -245,6 +246,9 @@ void Window::idle_callback()
 }
 void Window::display_callback(GLFWwindow* window)
 {
+	glm::dvec2 currPos;
+	glfwGetCursorPos(window, &currPos.x, &currPos.y);
+	lastPoint = trackBallMapping(currPos.x, currPos.y);
 	if (onlyfortest) return;
 	glUniform1f(glGetUniformLocation(dofshaderProgram, "width"), Window::width);
 	glUniform1f(glGetUniformLocation(dofshaderProgram, "height"), Window::height);
@@ -396,9 +400,6 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 
 void Window::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-	glm::dvec2 currPos;
-	glfwGetCursorPos(window, &currPos.x, &currPos.y);
-	lastPoint = trackBallMapping(currPos.x, currPos.y);
 	Movement = Rotate;
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
 		enable8bj = 1;
@@ -461,7 +462,6 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 			}
 		}
 		//cout << cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << endl;
-		lastPoint = currPoint;
 	}
 	else if (Movement == Translate) {
 		currPoint = glm::vec3(xpos, ypos, 0.0f);
