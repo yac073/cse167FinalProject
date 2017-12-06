@@ -70,7 +70,7 @@ int main(void)
 	ISoundEngine* engine = createIrrKlangDevice();
 	// Create the GLFW window
 	window = Window::create_window(1920, 1080);	
-	engine->play2D("../res/bell.wav");
+	engine->play2D("../res/bgm.mp3", true);	
 	// Print OpenGL and GLSL versions
 	print_versions();
 	// Setup callbacks
