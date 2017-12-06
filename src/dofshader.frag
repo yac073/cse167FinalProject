@@ -76,9 +76,9 @@ void main(){
     vec2 aspectcorrect = vec2( 1.0, 16.0f / 9.0f );
 	vec4 depth1 = texture2D(tDepth, Texcoord );
     
-    float factor = depth1.x - focus;
+    float factor = depth1.x * depth1.x - focus;
     
-    vec2 dofblur = vec2 ( clamp( factor * 1/5.6f, -0.05f, 0.05f ) );
+    vec2 dofblur = vec2 ( clamp( factor * 1/1.2f, -0.05f, 0.05f ) );
     
     vec4 col = vec4( 0.0f );
     col += texture(texFramebuffer, Texcoord);

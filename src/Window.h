@@ -25,6 +25,7 @@
 #define STBI_ASSERT(x)
 #include "stb_image.h"
 #include "fbo.h"
+#include "../audio/irrKlang.h"
 
 class Window
 {
@@ -46,7 +47,7 @@ public:
 	static glm::mat4 V; // V for view
 	static glm::mat4 pMatrix;
 	static glm::vec3 cam_pos;
-	static void initialize_objects();
+	static void initialize_objects(irrklang::ISoundEngine*);
 	static int enableDOF;
 	static int enableMB;
 	static void RefreshBallPos();

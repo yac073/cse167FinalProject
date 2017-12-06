@@ -16,9 +16,10 @@ int selected;
 double lastUpdatetime, dTime;
 bool shouldUpdate;
 bool shouldAllowManu = true;
-float xrot = 0, yrot = 0, dX, dY;
+float xrot = 0, yrot = 0, dX = 0, dY = 0;
 GLuint vaoQuad, vboQuad;
 int enable8bj = 0;
+double lastFired = 0;
 bool onlyfortest = false;
 SingleSampleFbo* ssFbo;
 list<SingleSampleFbo*>msFbo;
@@ -61,7 +62,8 @@ glm::mat4 Window::V;
 int Window::enableDOF = 1;
 int Window::enableMB = 0;
 float Window::focal;
-const int MOTION_BLUR_SAMPLE_NUM = 9;
+const int MOTION_BLUR_SAMPLE_NUM = 25;
+irrklang::ISoundEngine* eng;
 GLfloat quadVertices[] = {
 	-1.0f,  1.0f,  0.0f, 1.0f,
 	1.0f,  1.0f,  1.0f, 1.0f,
@@ -83,7 +85,7 @@ void specifyScreenVertexAttributes(GLuint shaderProgram)
 	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 }
 
-void Window::initialize_objects()
+void Window::initialize_objects(irrklang::ISoundEngine* engine)
 {	
 	cube = new Cube();
 	// Load the shader program. Make sure you have the correct filepath up top
@@ -115,8 +117,9 @@ void Window::initialize_objects()
 	glBindBuffer(GL_ARRAY_BUFFER, vboQuad);
 	specifyScreenVertexAttributes(dofshaderProgram);
 	specifyScreenVertexAttributes(mbshaderProgram);
-	focal = 0.972656f;	
+	focal = 0.972656f * 0.972656f;
 	Movement = Rotate;
+	eng = engine;
 }
 
 
@@ -170,9 +173,14 @@ GLFWwindow* Window::create_window(int width, int height)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-
 	// Create the GLFW window
+#ifdef _DEBUG
+	GLFWwindow* window = glfwCreateWindow(1280, 720, window_title, 0, NULL);
+#else
 	GLFWwindow* window = glfwCreateWindow(width, height, window_title, glfwGetPrimaryMonitor(), NULL);
+#endif
+
+	
 	// Check if the window could not be created
 	if (!window)
 	{
@@ -287,14 +295,24 @@ void Window::display_callback(GLFWwindow* window)
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
 	else {
-		if (msFbo.size() == MOTION_BLUR_SAMPLE_NUM) {
+		if (msFbo.size() >= MOTION_BLUR_SAMPLE_NUM - 10) {
 			auto lastone = msFbo.back();			
 			delete(lastone);
 			msFbo.pop_back();
 		}
 		//reder the scene to msFbo
-		while (msFbo.size() < MOTION_BLUR_SAMPLE_NUM){			
+		while (msFbo.size() < MOTION_BLUR_SAMPLE_NUM){	
+			auto tempFbo = new SingleSampleFbo(Window::width, Window::height);
+			glBindFramebuffer(GL_FRAMEBUFFER, tempFbo->fbo);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glEnable(GL_DEPTH_TEST);
+			//normal draw
+			curve->draw(curveshaderProgram, obj->friction);
+			controls->draw(glm::mat4(1.0f));
+			obj->draw(skymapShaderProgram);
+			cube->draw(skyboxshaderProgram);
 			msFbo.push_front(new SingleSampleFbo(Window::width, Window::height));
+			//draw to msFbo
 			glBindFramebuffer(GL_FRAMEBUFFER, msFbo.front()->fbo);
 			glBindVertexArray(vaoQuad);
 			glDisable(GL_DEPTH_TEST);
@@ -305,13 +323,14 @@ void Window::display_callback(GLFWwindow* window)
 			//bind color map
 			glUniform1i(glGetUniformLocation(dofshaderProgram, "texFramebuffer"), 0);
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, ssFbo->colormap);
+			glBindTexture(GL_TEXTURE_2D, tempFbo->colormap);
 			//bind depth map
 			glUniform1i(glGetUniformLocation(dofshaderProgram, "tDepth"), 1);
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, ssFbo->depthmap);
+			glBindTexture(GL_TEXTURE_2D, tempFbo->depthmap);
 
 			glDrawArrays(GL_TRIANGLES, 0, 6);
+			delete(tempFbo);
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindVertexArray(vaoQuad);
@@ -375,10 +394,10 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 			shouldAllowManu = false;
 		}		
 		if (key == GLFW_KEY_Q) {
-			focal = 10000;
+			focal = 1;
 		}
 		if (key == GLFW_KEY_E) {
-			focal = 0.972656;
+			focal = 0.972656f * 0.972656f;
 		}
 		if (key == GLFW_KEY_1) {
 			enableDOF = !enableDOF;
@@ -403,9 +422,10 @@ void Window::mouse_button_callback(GLFWwindow* window, int button, int action, i
 	Movement = Rotate;
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
 		enable8bj = 1;
-	}
-	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+	} else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
 		enable8bj = 0;
+	} else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		if (enable8bj && glfwGetTime() - lastFired > 2) { eng->play2D("../res/awp1.wav"); lastFired = glfwGetTime(); }
 	}
 }
 
@@ -497,10 +517,12 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	if (yoffset > 0) {
-		focal += 1.0f / 256.0f;
+		focal += 1.0f / 1024.0f;
+		focal = (focal > 1 ? 1.0f : focal);
 	}
 	else {
-		focal -= 1.0f / 256.0f;
+		focal -= 1.0f / 1024.0f;
+		focal = (focal < -1 ? -1.0f : focal);
 
 	}
 	P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);

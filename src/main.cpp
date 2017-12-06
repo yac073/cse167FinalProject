@@ -78,7 +78,7 @@ int main(void)
 	// Setup OpenGL settings, including lighting, materials, etc.
 	setup_opengl_settings();
 	// Initialize objects/pointers for rendering
-	Window::initialize_objects();
+	Window::initialize_objects(engine);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	// Loop while GLFW window should stay open
 	while (!glfwWindowShouldClose(window))
