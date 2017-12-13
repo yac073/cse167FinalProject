@@ -1,3 +1,6 @@
+#ifndef LIGHT_H
+#define LIGHT_H
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/mat4x4.hpp>
@@ -14,3 +17,5 @@ float Exponent;
 int Type;
 Light::Light(int type);
 };
+
+#endif

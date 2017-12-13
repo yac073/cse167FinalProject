@@ -83,12 +83,12 @@ public:
 
 	std::vector<std::string> faces
 	{
-		"../res/Skybox_Water222_right.jpg",
-/*lf*/		"../res/Skybox_Water222_left.jpg",
-		"../res/Skybox_Water222_top.jpg",
-		"../res/Skybox_Water222_base.jpg",
-/*fr*/		"../res/Skybox_Water222_front.jpg",
-		"../res/Skybox_Water222_back.jpg"
+		"../res/s_right.jpg",
+/*lf*/		"../res/s_left.jpg",
+		"../res/s_top.jpg",
+		"../res/s_bottom.jpg",
+/*fr*/		"../res/s_back.jpg",
+		"../res/s_front.jpg"
 	};
 
 };

@@ -58,6 +58,18 @@
     <None Include="..\src\mbshader.vert">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="..\src\terrain_shader.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\src\terrain_shader.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\src\bobshader.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\src\bobshader.vert">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Cube.h">
@@ -165,6 +177,33 @@
     <ClInclude Include="..\audio\irrKlang.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\lSystem.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ppm.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\terrain.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Lightz.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\OBJObjectz.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sceneGraph.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spongeBob.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\PerlinNoise.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lTree.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Cube.cpp">
@@ -204,6 +243,33 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fbo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ppm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\terrain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Lightz.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\OBJObjectz.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sceneGraph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spongeBob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\PerlinNoise.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lTree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

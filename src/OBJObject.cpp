@@ -2,6 +2,9 @@
 #include "OBJObject.h"
 #include "Window.h"
 
+GLuint OBJObject::treeTexture;
+GLuint OBJObject::leaveTexture;
+
 OBJObject::OBJObject(const char *filepath) 
 {
 	toWorld = glm::mat4(1.0f);
@@ -89,7 +92,8 @@ void OBJObject::parse(const char *filepath)
 		}
 		fclose(fp);
 	}
-	toWorld = glm::translate(glm::mat4(1.0f), glm::vec3(-(xMin + xMax) / 2, -(yMin + yMax) / 2, -(zMin + zMax) / 2)) * toWorld;
+	toWorld = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / (xMax - xMin), 2.0f / (yMax - yMin), 2.0f / (zMax - zMin))) * glm::translate(glm::mat4(1.0f), glm::vec3(-(xMin + xMax) / 2, -(yMin + yMax) / 2, -(zMin + zMax) / 2)) * toWorld;
+	cerr << vertices.size() << endl;
 }
 
 void OBJObject::draw(GLuint shaderProgram, bool isAlpha, bool isInter, int id)
@@ -110,33 +114,20 @@ void OBJObject::draw(GLuint shaderProgram, bool isAlpha, bool isInter, int id)
 
 		useNormal = true;
 
-		//glUniform3f(glGetUniformLocation(shaderProgram, "light.Color"), light.Color.x, light.Color.y, light.Color.z);
-		//glUniform3f(glGetUniformLocation(shaderProgram, "light.Direction"), light.Direction.x, light.Direction.y, light.Direction.z);
-		//glUniform3f(glGetUniformLocation(shaderProgram, "light.Position"), light.Position.x, light.Position.y, light.Position.z);
-		//glUniform3f(glGetUniformLocation(shaderProgram, "light.ConeCenter"), light.ConeCenter.x, light.ConeCenter.y, light.ConeCenter.z);
-		//glUniform1f(glGetUniformLocation(shaderProgram, "light.Cutoff"), light.Cutoff);
-		//glUniform1f(glGetUniformLocation(shaderProgram, "light.Exponent"), light.Exponent);
-		//glUniform1i(glGetUniformLocation(shaderProgram, "light.Type"), light.Type);
-
-		//glUniform3f(glGetUniformLocation(shaderProgram, "material.Diffuse"), material.Diffuse.x, material.Diffuse.y, material.Diffuse.z);
-		//glUniform3f(glGetUniformLocation(shaderProgram, "material.Ambient"), material.Ambient.x, material.Ambient.y, material.Ambient.z);
-		//glUniform3f(glGetUniformLocation(shaderProgram, "material.Specular"), material.Specular.x, material.Specular.y, material.Specular.z);
-		//glUniform3f(glGetUniformLocation(shaderProgram, "material.Color"), material.Color.x, material.Color.y, material.Color.z);
-		//glUniform1f(glGetUniformLocation(shaderProgram, "material.Shininess"), material.Shininess);
-		//glUniform1i(glGetUniformLocation(shaderProgram, "material.Type"), material.Type);
-
-		//glUniform3f(glGetUniformLocation(shaderProgram, "viewPosition"), Window::cam_pos.x, Window::cam_pos.y, Window::cam_pos.z);
-		//glEnable(GL_BLEND);
-		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		//glUniform1i(glGetUniformLocation(shaderProgram, "useNormal"), useNormal);
-		//glUniform1f(glGetUniformLocation(shaderProgram, "transparancy"), transparancy);
-
 		// Now draw the cube. We simply need to bind the VAO associated with it.
 		glBindVertexArray(VAO);
-		glUniform1i(glGetUniformLocation(shaderProgram, "isAlpha"), 0);
 		glUniform1i(glGetUniformLocation(shaderProgram, "isInter"), isInter ? 1 : 0);
 		glUniform1i(glGetUniformLocation(shaderProgram, "id"), id);
 		glUniform1f(glGetUniformLocation(shaderProgram, "focal"), Window::focal);
+
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, treeTexture);
+
+		glActiveTexture(GL_TEXTURE1);
+		glUniform1i(glGetUniformLocation(shaderProgram, "tex2"), 1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, leaveTexture);
+
 		// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 		// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
@@ -164,3 +155,66 @@ void OBJObject::setMatrix(glm::mat4 matrix)
 	this->transform = matrix;
 }
 
+void OBJObject::loadTextures() {
+
+	vector <const GLchar *> tree;
+	tree.push_back("../res/tree.jpg");
+	tree.push_back("../res/tree.jpg");
+	tree.push_back("../res/tree.jpg");
+	tree.push_back("../res/tree.jpg");
+	tree.push_back("../res/tree.jpg");
+	tree.push_back("../res/tree.jpg");
+
+	GLuint ID;
+	int width, height, nrChannels;
+	unsigned char* tdata;
+
+	glGenTextures(1, &ID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ID);
+
+	for (GLuint i = 0; i < tree.size(); i++)
+	{
+		tdata = stbi_load(tree[i], &width, &height, &nrChannels, 0);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, tdata);
+		stbi_image_free(tdata);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	treeTexture = ID;
+
+	// ---------------- second part -------------
+	vector <const GLchar *> leaf;
+	leaf.push_back("../res/leave.jpg");
+	leaf.push_back("../res/leave.jpg");
+	leaf.push_back("../res/leave.jpg");
+	leaf.push_back("../res/leave.jpg");
+	leaf.push_back("../res/leave.jpg");
+	leaf.push_back("../res/leave.jpg");
+
+	GLuint textureID_2;
+
+	glGenTextures(1, &textureID_2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID_2);
+
+	for (GLuint i = 0; i < leaf.size(); i++)
+	{
+		tdata = stbi_load(leaf[i], &width, &height, &nrChannels, 0);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, tdata);
+		stbi_image_free(tdata);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	leaveTexture = textureID_2;
+}

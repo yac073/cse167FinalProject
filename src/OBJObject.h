@@ -48,6 +48,10 @@ public:
 
 	glm::mat4 getMatrix();
 	void setMatrix(glm::mat4 matrix);
+
+	static GLuint treeTexture, leaveTexture;
+
+	static void loadTextures();
 };
 
 #endif

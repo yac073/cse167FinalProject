@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\soil.1.16.0\build\native\soil.props" Condition="Exists('..\packages\soil.1.16.0\build\native\soil.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -19,6 +20,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\src\bobshader.frag" />
+    <None Include="..\src\bobshader.vert" />
     <None Include="..\src\controlshader.frag" />
     <None Include="..\src\controlshader.vert" />
     <None Include="..\src\curveshader.frag" />
@@ -33,6 +36,8 @@
     <None Include="..\src\skyboxshader.vert" />
     <None Include="..\src\skymapshader.frag" />
     <None Include="..\src\skymapshader.vert" />
+    <None Include="..\src\terrain_shader.frag" />
+    <None Include="..\src\terrain_shader.vert" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -62,14 +67,23 @@
     <ClInclude Include="..\src\fbo.h" />
     <ClInclude Include="..\src\geometry.h" />
     <ClInclude Include="..\src\Light.h" />
+    <ClInclude Include="..\src\Lightz.h" />
+    <ClInclude Include="..\src\lSystem.h" />
+    <ClInclude Include="..\src\lTree.h" />
     <ClInclude Include="..\src\main.h" />
     <ClInclude Include="..\src\Material.h" />
     <ClInclude Include="..\src\node.h" />
     <ClInclude Include="..\src\OBJObject.h" />
+    <ClInclude Include="..\src\OBJObjectz.h" />
+    <ClInclude Include="..\src\PerlinNoise.h" />
+    <ClInclude Include="..\src\ppm.h" />
+    <ClInclude Include="..\src\sceneGraph.h" />
     <ClInclude Include="..\src\shader.h" />
     <ClInclude Include="..\src\skymappingOBJ.h" />
+    <ClInclude Include="..\src\spongeBob.h" />
     <ClInclude Include="..\src\stb_image.h" />
     <ClInclude Include="..\src\tansform.h" />
+    <ClInclude Include="..\src\terrain.h" />
     <ClInclude Include="..\src\Window.h" />
   </ItemGroup>
   <ItemGroup>
@@ -78,13 +92,22 @@
     <ClCompile Include="..\src\fbo.cpp" />
     <ClCompile Include="..\src\geometry.cpp" />
     <ClCompile Include="..\src\Light.cpp" />
+    <ClCompile Include="..\src\Lightz.cpp" />
+    <ClCompile Include="..\src\lSystem.cpp" />
+    <ClCompile Include="..\src\lTree.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\Material.cpp" />
     <ClCompile Include="..\src\node.cpp" />
     <ClCompile Include="..\src\OBJObject.cpp" />
+    <ClCompile Include="..\src\OBJObjectz.cpp" />
+    <ClCompile Include="..\src\PerlinNoise.cpp" />
+    <ClCompile Include="..\src\ppm.cpp" />
+    <ClCompile Include="..\src\sceneGraph.cpp" />
     <ClCompile Include="..\src\shader.cpp" />
     <ClCompile Include="..\src\skymappingOBJ.cpp" />
+    <ClCompile Include="..\src\spongeBob.cpp" />
     <ClCompile Include="..\src\tansform.cpp" />
+    <ClCompile Include="..\src\terrain.cpp" />
     <ClCompile Include="..\src\Window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -200,5 +223,6 @@
     <Error Condition="!Exists('..\packages\nupengl.core.redist.0.1.0.1\build\native\nupengl.core.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nupengl.core.redist.0.1.0.1\build\native\nupengl.core.redist.targets'))" />
     <Error Condition="!Exists('..\packages\nupengl.core.0.1.0.1\build\native\nupengl.core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nupengl.core.0.1.0.1\build\native\nupengl.core.targets'))" />
     <Error Condition="!Exists('..\packages\glm.0.9.8.4\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.0.9.8.4\build\native\glm.targets'))" />
+    <Error Condition="!Exists('..\packages\soil.1.16.0\build\native\soil.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\soil.1.16.0\build\native\soil.props'))" />
   </Target>
 </Project>

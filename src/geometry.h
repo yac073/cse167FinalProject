@@ -31,7 +31,7 @@ public:
 		name = n;
 		shouldDraw = true;
 		this->id = id;
-		obj->id = id;
+		//obj->id = id;
 	};
 	void tick();
 	void update();

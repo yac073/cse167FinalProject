@@ -19,7 +19,7 @@ uniform float focal;
 // The default output, gl_Position, should be assigned something. You can define as many
 // extra outputs as you need.
 out vec3 Normal;
-out float z;
+out vec3 TexCoords;
 
 void main()
 {
@@ -27,6 +27,5 @@ void main()
     gl_Position = projection * modelview * vec4(position.x, position.y, position.z, 1.0);
 
     Normal = normalize(mat3(transpose(inverse(model))) * aNormal);
-	z = length(modelview *  vec4(position.x, position.y, position.z, 1.0)) - focal;
-
+	TexCoords = position;
 }

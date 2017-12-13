@@ -16,7 +16,7 @@ void Geometry::loadOBJ(char* s)
 void Geometry::draw(glm::mat4 m)
 {
 	setMatrix(m);
-	if (shouldDraw) { obj->draw(shaderProgram, isAlpha, name == "inter" ? true : false, id); }
+	if (shouldDraw) { obj->draw(shaderProgram, isAlpha, id == 88, id); }
 	
 }
 

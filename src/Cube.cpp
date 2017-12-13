@@ -34,7 +34,7 @@ void Cube::draw(GLuint shaderProgram)
 { 
 	glUseProgram(shaderProgram);
 	// Calculate the combination of the model and view (camera inverse) matrices
-	glm::mat4 modelview = Window::V * toWorld;
+	glm::mat4 modelview = glm::mat4(glm::mat3(Window::V)) * toWorld;
 
 	uProjection = glGetUniformLocation(shaderProgram, "projection");
 	uModelview = glGetUniformLocation(shaderProgram, "view");

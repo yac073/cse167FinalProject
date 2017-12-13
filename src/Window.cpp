@@ -1,12 +1,12 @@
 #include "window.h"
 const char* window_title = "CSE167FinalProject";
 Cube * cube;
-OBJObject* sphere;
+OBJObject* sphere,*treecube;
 Curve * curve;
 SkymappingOBJ* obj;
 //OBJObject* cubeOBJ;
 Transform* controls;
-GLint shaderProgram, skyboxshaderProgram, curveshaderProgram, controlshaderProgram, skymapShaderProgram, dofshaderProgram, mbshaderProgram;
+GLint shaderProgram, skyboxshaderProgram, curveshaderProgram, controlshaderProgram, skymapShaderProgram, dofshaderProgram, mbshaderProgram,terrianshaderProgram,bobshaderProgram;
 int robotNum, localAngle, grandAngle;
 bool culling;
 float robotScale;
@@ -23,7 +23,11 @@ double lastFired = 0;
 bool onlyfortest = false;
 SingleSampleFbo* ssFbo;
 list<SingleSampleFbo*>msFbo;
-
+Terrain* terrain;
+DirectionLight* lightSB;
+SpongeBob * bob;
+bool isForwarding, isBacking, isLeftMoving, isRightMoving, mapHadUpdated;
+vector<LTree*> trees;
 // On some systems you need to change this to the absolute path
 #define VERTEX_SHADER_PATH "../src/shader.vert"
 #define FRAGMENT_SHADER_PATH "../src/shader.frag"
@@ -39,6 +43,11 @@ list<SingleSampleFbo*>msFbo;
 #define DOF_FRAGMENT_SHADER_PATH "../src/dofshader.frag"
 #define MB_VERTEX_SHADER_PATH "../src/mbshader.vert"
 #define MB_FRAGMENT_SHADER_PATH "../src/mbshader.frag"
+#define TERRIAN_VERTEX_SHADER_PATH "../src/terrain_shader.vert"
+#define TERRIAN_FRAGMENT_SHADER_PATH "../src/terrain_shader.frag"
+#define BOB_VERTEX_SHADER_PATH "../src/bobshader.vert"
+#define BOB_FRAGMENT_SHADER_PATH "../src/bobshader.frag"
+#define TREE_NUM 15
 // Default camera parameters
 glm::vec3 Window::cam_pos(0.0f, 0.0f, 0.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
@@ -59,7 +68,7 @@ glm::vec3 zBiase(0.0f, 0.0f, 1.0f);
 
 glm::mat4 Window::P;
 glm::mat4 Window::V;
-int Window::enableDOF = 1;
+int Window::enableDOF = 0;
 int Window::enableMB = 0;
 float Window::focal;
 const int MOTION_BLUR_SAMPLE_NUM = 25;
@@ -96,16 +105,24 @@ void Window::initialize_objects(irrklang::ISoundEngine* engine)
 	skymapShaderProgram = LoadShaders(SKYMAP_VERTEX_SHADER_PATH, SKYMAP_FRAGMENT_SHADER_PATH);
 	dofshaderProgram = LoadShaders(DOF_VERTEX_SHADER_PATH, DOF_FRAGMENT_SHADER_PATH);
 	mbshaderProgram = LoadShaders(MB_VERTEX_SHADER_PATH, MB_FRAGMENT_SHADER_PATH);
-	sphere = new OBJObject("../res/sphere.obj");
+	terrianshaderProgram = LoadShaders(TERRIAN_VERTEX_SHADER_PATH, TERRIAN_FRAGMENT_SHADER_PATH);
+	bobshaderProgram = LoadShaders(BOB_VERTEX_SHADER_PATH, BOB_FRAGMENT_SHADER_PATH);
+	//sphere = new OBJObject("../res/limb.obj");
+	treecube = new OBJObject("../res/cube.obj");
 	obj = new SkymappingOBJ("../res/sphere.obj");
 	fov = 45.0f;
 	//cubeOBJ = new OBJObject("../cube.obj");
 	culling = true;
 	//singleRobot = buildRobot(glm::mat4(1.0f));
 	curve = new Curve();
-	controls = loadControls(glm::mat4(1.0f));
+	//controls = loadControls(glm::mat4(1.0f));
 	obj->curvePts = curve->vertices;
 	RefreshBallPos();	
+	terrain = new Terrain("../res/SanDiegoTerrain.ppm");
+	lightSB = new DirectionLight();
+	OBJObjectz::loadSpongeBobTextures();
+	OBJObject::loadTextures();
+	bob = new SpongeBob();
 	auto fbo = new SingleSampleFbo(Window::width, Window::height);
 	ssFbo = new SingleSampleFbo(Window::width, Window::height);
 	msFbo.push_back(fbo);
@@ -120,6 +137,14 @@ void Window::initialize_objects(irrklang::ISoundEngine* engine)
 	focal = 0.972656f * 0.972656f;
 	Movement = Rotate;
 	eng = engine;
+	for (int i = 0; i < TREE_NUM; i++) {
+		auto tree = new LTree(3, treecube, controlshaderProgram, i % 3);
+		tree->updateHeight(terrain->getHeight((tree->getPos().x + 400.0f) / 800.0f * 1023, (tree->getPos().z + 400.0f) / 800.0f * 1023));
+		trees.push_back(tree);
+	}
+	bob->setHeight(terrain->getHeight((bob->getPos().x + 400.0f) / 800.0f * 1023, (bob->getPos().z + 400.0f) / 800.0f * 1023));
+	isForwarding = isBacking = isLeftMoving = isRightMoving = false;
+	mapHadUpdated = false;
 }
 
 
@@ -140,7 +165,10 @@ void Window::clean_up()
 	delete(controls);
 	delete(obj);	
 	delete(ssFbo);
-
+	delete(terrain);
+	delete(lightSB);
+	delete(bob);
+	delete(treecube);
 	glDeleteProgram(shaderProgram);
 	glDeleteProgram(skyboxshaderProgram);
 	glDeleteProgram(curveshaderProgram);
@@ -150,7 +178,11 @@ void Window::clean_up()
 	glDeleteProgram(mbshaderProgram);
 	glDeleteVertexArrays(1, &vaoQuad);
 	glDeleteBuffers(1, &vboQuad);
-
+	glDeleteProgram(terrianshaderProgram);
+	glDeleteProgram(bobshaderProgram);
+	for each (auto tree in trees) {
+		delete(tree);
+	}
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -216,7 +248,7 @@ void Window::resize_callback(GLFWwindow* window, int width, int height)
 	if (height > 0)
 	{
 		P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
-		V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+		V = glm::lookAt(cam_pos, cam_pos+cam_look_at, cam_up);
 	}
 	//reinit fbo
 	if (msFbo.size() > 0) {
@@ -240,6 +272,29 @@ void Window::resize_callback(GLFWwindow* window, int width, int height)
 void Window::idle_callback()
 {
 	double nowTime = glfwGetTime();
+	lightSB->update();
+	bob->update();
+	if (mapHadUpdated) {
+		auto h = terrain->getMapHeight(cam_pos.x, cam_pos.z);
+		cam_pos.y = h + 0.5;
+	}
+	else {
+		auto h = terrain->getHeight((cam_pos.x + 400.0f) / 800.0f * 1023, (cam_pos.z + 400.0f) / 800.0f * 1023);
+		cam_pos.y = h + 0.5;
+	}
+	if (isForwarding) {
+		cam_pos -= glm::normalize(glm::cross(glm::cross(cam_look_at, cam_up), cam_up)) / 2;
+	}
+	if (isBacking){
+		cam_pos += glm::normalize(glm::cross(glm::cross(cam_look_at, cam_up), cam_up)) / 2;
+	}
+	if (isLeftMoving) {
+		cam_pos -= glm::normalize(glm::cross(cam_look_at, cam_up)) / 2;
+	}
+	if (isRightMoving) {
+		cam_pos += glm::normalize(glm::cross(cam_look_at, cam_up)) / 2;
+	}
+	V = glm::lookAt(cam_pos, cam_pos + cam_look_at, cam_up);
 	//cout << "fps " << 1.0f / (nowTime - lastUpdatetime) << endl;
 	if (shouldUpdate) {
 		obj->update(nowTime - lastUpdatetime);
@@ -268,11 +323,22 @@ void Window::display_callback(GLFWwindow* window)
 		glBindFramebuffer(GL_FRAMEBUFFER, ssFbo->fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		treecube->draw(controlshaderProgram, false, false, 0);
 		//normal draw
-		curve->draw(curveshaderProgram, obj->friction);
-		controls->draw(glm::mat4(1.0f));
-		obj->draw(skymapShaderProgram);
+		//curve->draw(curveshaderProgram, obj->friction);
+		//controls->draw(glm::mat4(1.0f));
+		//obj->draw(skymapShaderProgram);
+		for each (auto var in trees)
+		{
+			var->draw();
+		}
+		//testtree->draw(glm::mat4(1.0f));
+		//testtree2->draw(glm::mat4(1.0f));
+		//testtree3->draw(glm::mat4(1.0f));
+		terrain->draw(terrianshaderProgram);
+		bob->draw(bobshaderProgram);
 		cube->draw(skyboxshaderProgram);
+		
 	}
 
 	if (enableMB == 0) {
@@ -302,15 +368,15 @@ void Window::display_callback(GLFWwindow* window)
 		}
 		//reder the scene to msFbo
 		while (msFbo.size() < MOTION_BLUR_SAMPLE_NUM){	
-			auto tempFbo = new SingleSampleFbo(Window::width, Window::height);
-			glBindFramebuffer(GL_FRAMEBUFFER, tempFbo->fbo);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glEnable(GL_DEPTH_TEST);
-			//normal draw
-			curve->draw(curveshaderProgram, obj->friction);
-			controls->draw(glm::mat4(1.0f));
-			obj->draw(skymapShaderProgram);
-			cube->draw(skyboxshaderProgram);
+			//auto tempFbo = new SingleSampleFbo(Window::width, Window::height);
+			//glBindFramebuffer(GL_FRAMEBUFFER, tempFbo->fbo);
+			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			//glEnable(GL_DEPTH_TEST);
+			////normal draw
+			//curve->draw(curveshaderProgram, obj->friction);
+			//controls->draw(glm::mat4(1.0f));
+			//obj->draw(skymapShaderProgram);
+			//cube->draw(skyboxshaderProgram);
 			msFbo.push_front(new SingleSampleFbo(Window::width, Window::height));
 			//draw to msFbo
 			glBindFramebuffer(GL_FRAMEBUFFER, msFbo.front()->fbo);
@@ -323,14 +389,14 @@ void Window::display_callback(GLFWwindow* window)
 			//bind color map
 			glUniform1i(glGetUniformLocation(dofshaderProgram, "texFramebuffer"), 0);
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, tempFbo->colormap);
+			glBindTexture(GL_TEXTURE_2D, ssFbo->colormap);
 			//bind depth map
 			glUniform1i(glGetUniformLocation(dofshaderProgram, "tDepth"), 1);
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, tempFbo->depthmap);
+			glBindTexture(GL_TEXTURE_2D, ssFbo->depthmap);
 
 			glDrawArrays(GL_TRIANGLES, 0, 6);
-			delete(tempFbo);
+			//delete(tempFbo);
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindVertexArray(vaoQuad);
@@ -372,38 +438,41 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 			// Close the window. This causes the program to also terminate.
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
-		if (key == GLFW_KEY_P) {			
-			shouldUpdate = !shouldUpdate;
-		}
-		if (key == GLFW_KEY_SPACE) {
+		else if (key == GLFW_KEY_SPACE) {
 			RefreshBallPos();
-		}
-		if (key == GLFW_KEY_F) {
-			obj->friction = !obj->friction;
-		}
-		if (key == GLFW_KEY_R) {
-			cam_pos = glm::vec3(0.0f, 0.0f, 0.0f);
-			xBiase = glm::vec3(1.0f, 0.0f, 0.0f);
-			yBiase = glm::vec3(0.0f, 1.0f, 0.0f);
-			zBiase = glm::vec3(0.0f, 0.0f, 1.0f);
-			P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
-			V = glm::lookAt(cam_pos, cam_look_at, cam_up);
-			shouldAllowManu = true;
-		}
-		if (key == GLFW_KEY_F1) {
-			shouldAllowManu = false;
-		}		
-		if (key == GLFW_KEY_Q) {
+		}	
+		else if (key == GLFW_KEY_Q) {
 			focal = 1;
 		}
-		if (key == GLFW_KEY_E) {
+		else if (key == GLFW_KEY_E) {
 			focal = 0.972656f * 0.972656f;
 		}
-		if (key == GLFW_KEY_1) {
+		else if (key == GLFW_KEY_1) {
 			enableDOF = !enableDOF;
 			cout << "DOF " << (enableDOF == 1 ? " Enabled" : "Disabled") << endl;
 		}
-		if (key == GLFW_KEY_2) {
+		else if (key == GLFW_KEY_R) {
+			terrain->regenerate_random();		
+			mapHadUpdated = true;
+			for each(auto var in trees) {
+				var->updateHeight(terrain->getMapHeight(var->getPos().x, var->getPos().z));
+			}
+			bob->setHeight(terrain->getMapHeight(bob->getPos().x, bob->getPos().z));
+		}
+		else if (key == GLFW_KEY_F) {
+			for each (auto var in trees)
+			{
+				var->updateTree();
+				if (mapHadUpdated) {
+					var->updateHeight(terrain->getMapHeight(var->getPos().x, var->getPos().z));
+				}
+				else {
+					var->updateHeight(terrain->getHeight((var->getPos().x + 400.0f) / 800.0f * 1023, (var->getPos().z + 400.0f) / 800.0f * 1023));
+				}
+			}
+			
+		}
+		else if (key == GLFW_KEY_2) {
 			enableMB = !enableMB;
 			cout << "Motion blur " << (enableMB == 1 ? " Enabled" : "Disabled") << endl;
 			if (!enableMB) {
@@ -413,6 +482,32 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 					msFbo.pop_front();
 				}
 			}
+		}		
+		else if (key == GLFW_KEY_W) {
+			isForwarding = true;
+		}
+		else if (key == GLFW_KEY_S) {
+			isBacking = true;
+		}
+		else if (key == GLFW_KEY_A) {
+			isLeftMoving = true;
+		}
+		else if (key == GLFW_KEY_D) {
+			isRightMoving = true;
+		}
+	}
+	else if (action == GLFW_RELEASE) {
+		if (key == GLFW_KEY_W) {
+			isForwarding = false;
+		}
+		else if (key == GLFW_KEY_S) {
+			isBacking = false;
+		}
+		else if (key == GLFW_KEY_A) {
+			isLeftMoving = false;
+		}
+		else if (key == GLFW_KEY_D) {
+			isRightMoving = false;
 		}
 	}
 }
@@ -478,7 +573,7 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 				cam_look_at = glm::rotate(glm::mat4(1.0f), xrot, glm::vec3(0.0f, 1.0f, 0.0f)) * 
 					glm::rotate(glm::mat4(1.0f), yrot, glm::vec3(1.0f, 0.0f, 0.0f)) * glm::vec4(glm::vec3(0.0f, 0.0f, -20.0f), 1.0f);
 				P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
-				V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+				V = glm::lookAt(cam_pos, cam_pos+cam_look_at, cam_up);
 			}
 		}
 		//cout << cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << endl;
@@ -505,7 +600,7 @@ void Window::cursor_position_callback(GLFWwindow * window, double xpos, double y
 			}
 			curve->refreshCurve();
 			delete(controls);
-			controls = loadControls(glm::mat4(1.0f));
+			//controls = loadControls(glm::mat4(1.0f));
 			lastPoint = currPoint;
 			obj->curvePts = curve->vertices;
 			obj->setMatrix(glm::translate(glm::mat4(1.0f), glm::vec3(obj->curvePts[obj->index])) * glm::scale(glm::mat4(1.0f), glm::vec3(0.3f)) * glm::mat4(1.0f));
@@ -526,34 +621,34 @@ void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 	}
 	P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
-	V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+	V = glm::lookAt(cam_pos, cam_pos+cam_look_at, cam_up);
 }
 
-Transform * Window::loadControls(glm::mat4)
-{
-	Transform* result = new Transform();
-	glm::vec3 points[24];
-	for (int i = 0; i < 24; i++) {
-		points[i] = curve->points[i];
-		if (i % 3 == 0) {
-			Transform * redControl = new Transform();
-			redControl->M = glm::translate(glm::mat4(1.0f), points[i]) * 
-				glm::scale(glm::mat4(1.0f), glm::vec3(0.2f)) * glm::mat4(1.0f);
-			result->addChild(redControl);
-			Geometry * control = new Geometry(sphere, controlshaderProgram, (i + 1) * 10, "inter");
-			redControl->addChild(control);
-		}
-		else {
-			Transform * greenControl = new Transform();
-			greenControl->M = glm::translate(glm::mat4(1.0f), points[i]) *
-				glm::scale(glm::mat4(1.0f), glm::vec3(0.2f)) * glm::mat4(1.0f);
-			result->addChild(greenControl);
-			Geometry * control = new Geometry(sphere, controlshaderProgram, (i + 1) * 10, "appro");
-			greenControl->addChild(control);
-		}
-	}
-	return result;
-}
+//Transform * Window::loadControls(glm::mat4)
+//{
+//	Transform* result = new Transform();
+//	glm::vec3 points[24];
+//	for (int i = 0; i < 24; i++) {
+//		points[i] = curve->points[i];
+//		if (i % 3 == 0) {
+//			Transform * redControl = new Transform();
+//			redControl->M = glm::translate(glm::mat4(1.0f), points[i]) * 
+//				glm::scale(glm::mat4(1.0f), glm::vec3(0.2f)) * glm::mat4(1.0f);
+//			result->addChild(redControl);
+//			Geometry * control = new Geometry(sphere, controlshaderProgram, (i + 1) * 10, "inter");
+//			redControl->addChild(control);
+//		}
+//		else {
+//			Transform * greenControl = new Transform();
+//			greenControl->M = glm::translate(glm::mat4(1.0f), points[i]) *
+//				glm::scale(glm::mat4(1.0f), glm::vec3(0.2f)) * glm::mat4(1.0f);
+//			result->addChild(greenControl);
+//			Geometry * control = new Geometry(sphere, controlshaderProgram, (i + 1) * 10, "appro");
+//			greenControl->addChild(control);
+//		}
+//	}
+//	return result;
+//}
 
 //Transform * Window::buildRobot(glm::mat4 position)
 //{

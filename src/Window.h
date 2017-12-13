@@ -25,7 +25,12 @@
 #define STBI_ASSERT(x)
 #include "stb_image.h"
 #include "fbo.h"
+#include "lSystem.h"
 #include "../audio/irrKlang.h"
+#include "terrain.h"
+#include "ppm.h"
+#include "spongeBob.h"
+#include "lTree.h"
 
 class Window
 {
@@ -64,7 +69,7 @@ public:
 	static glm::vec3 Window::trackBallMapping(double x, double y);
 	static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-	static Transform* loadControls(glm::mat4);
+	//static Transform* loadControls(glm::mat4);
 };
 
 #endif
