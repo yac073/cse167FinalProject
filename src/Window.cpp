@@ -26,7 +26,7 @@ list<SingleSampleFbo*>msFbo;
 Terrain* terrain;
 DirectionLight* lightSB;
 SpongeBob * bob;
-bool isForwarding, isBacking, isLeftMoving, isRightMoving, mapHadUpdated;
+bool isForwarding, isBacking, isLeftMoving, isRightMoving, mapHadUpdated, disableZeroG;
 vector<LTree*> trees;
 // On some systems you need to change this to the absolute path
 #define VERTEX_SHADER_PATH "../src/shader.vert"
@@ -49,7 +49,7 @@ vector<LTree*> trees;
 #define BOB_FRAGMENT_SHADER_PATH "../src/bobshader.frag"
 #define TREE_NUM 15
 // Default camera parameters
-glm::vec3 Window::cam_pos(0.0f, 0.0f, 0.0f);		// e  | Position of camera
+glm::vec3 Window::cam_pos(0.0f, 100.0f, 0.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -108,7 +108,7 @@ void Window::initialize_objects(irrklang::ISoundEngine* engine)
 	terrianshaderProgram = LoadShaders(TERRIAN_VERTEX_SHADER_PATH, TERRIAN_FRAGMENT_SHADER_PATH);
 	bobshaderProgram = LoadShaders(BOB_VERTEX_SHADER_PATH, BOB_FRAGMENT_SHADER_PATH);
 	//sphere = new OBJObject("../res/limb.obj");
-	treecube = new OBJObject("../res/cube.obj");
+	treecube = new OBJObject("../res/cube2.obj");
 	obj = new SkymappingOBJ("../res/sphere.obj");
 	fov = 45.0f;
 	//cubeOBJ = new OBJObject("../cube.obj");
@@ -143,8 +143,7 @@ void Window::initialize_objects(irrklang::ISoundEngine* engine)
 		trees.push_back(tree);
 	}
 	bob->setHeight(terrain->getHeight((bob->getPos().x + 400.0f) / 800.0f * 1023, (bob->getPos().z + 400.0f) / 800.0f * 1023));
-	isForwarding = isBacking = isLeftMoving = isRightMoving = false;
-	mapHadUpdated = false;
+	isForwarding = isBacking = isLeftMoving = isRightMoving = mapHadUpdated = disableZeroG = false;	
 }
 
 
@@ -274,11 +273,11 @@ void Window::idle_callback()
 	double nowTime = glfwGetTime();
 	lightSB->update();
 	bob->update();
-	if (mapHadUpdated) {
+	if (mapHadUpdated && disableZeroG) {
 		auto h = terrain->getMapHeight(cam_pos.x, cam_pos.z);
 		cam_pos.y = h + 0.5;
 	}
-	else {
+	else if (disableZeroG) {
 		auto h = terrain->getHeight((cam_pos.x + 400.0f) / 800.0f * 1023, (cam_pos.z + 400.0f) / 800.0f * 1023);
 		cam_pos.y = h + 0.5;
 	}
@@ -294,16 +293,10 @@ void Window::idle_callback()
 	if (isRightMoving) {
 		cam_pos += glm::normalize(glm::cross(cam_look_at, cam_up)) / 2;
 	}
+	cam_pos.x = glm::clamp(cam_pos.x, -390.0f, 390.0f);
+	cam_pos.z = glm::clamp(cam_pos.z, -390.0f, 390.0f);
 	V = glm::lookAt(cam_pos, cam_pos + cam_look_at, cam_up);
 	//cout << "fps " << 1.0f / (nowTime - lastUpdatetime) << endl;
-	if (shouldUpdate) {
-		obj->update(nowTime - lastUpdatetime);
-	}
-	if (!shouldAllowManu) {
-		cam_pos = obj->curvePts[obj->index] - glm::normalize(obj->facingDir) * 5.0f;
-		P = glm::perspective(fov, (float)width / (float)height, 0.1f, 1000.0f);
-		V = glm::lookAt(cam_pos, obj->curvePts[obj->index] + (obj->facingDir) * 10.0f, cam_up);
-	}
 	dTime = nowTime - lastUpdatetime;
 	lastUpdatetime = nowTime;
 }
@@ -494,6 +487,13 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 		}
 		else if (key == GLFW_KEY_D) {
 			isRightMoving = true;
+		}
+		else if (key == GLFW_KEY_G) {
+			disableZeroG = !disableZeroG;
+			if (!disableZeroG) {
+				cam_pos.y = 100.0f;
+				V = glm::lookAt(cam_pos, cam_pos + cam_look_at, cam_up);
+			}			
 		}
 	}
 	else if (action == GLFW_RELEASE) {

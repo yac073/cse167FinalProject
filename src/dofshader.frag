@@ -24,51 +24,258 @@ void enablebabeijing(){
 	}
 	if (xDis * xDis + yDis * yDis > height * height / (36 * 36) && xDis * xDis + yDis * yDis < height * height / (33 * 33)  ) { outColor = vec4(1.0f, 0.0f, 0.0f, 0.0f);}
 }
+bool isInside(vec2 pos){
+	if (pos.x < 0.0f || pos.x > 1.0f || pos.y < 0.0f || pos.y > 1.0f){
+		return false;
+	} else {
+		return true;
+	}
+}
 vec4 dof(vec4 col, vec2 aspectcorrect, vec2 dofblur){    
     vec2 dofblur9 = dofblur * 0.9;
     vec2 dofblur7 = dofblur * 0.7;
-    vec2 dofblur4 = dofblur * 0.4;
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.0f, 0.4f ) * aspectcorrect ) * dofblur );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, 0.37 ) * aspectcorrect ) * dofblur );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, 0.15 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.40, 0.0 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, -0.15 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, -0.37 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, 0.37 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, 0.15 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, -0.15 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, -0.37 ) * aspectcorrect ) * dofblur );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, 0.37 ) * aspectcorrect ) * dofblur9 );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, 0.15 ) * aspectcorrect ) * dofblur9 );
-    col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, -0.15 ) * aspectcorrect ) * dofblur9 );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, -0.37 ) * aspectcorrect ) * dofblur9 );
-    col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, 0.37 ) * aspectcorrect ) * dofblur9 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, 0.15 ) * aspectcorrect ) * dofblur9 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, -0.15 ) * aspectcorrect ) * dofblur9 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, -0.37 ) * aspectcorrect ) * dofblur9 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.40, 0.0 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, 0.4 ) * aspectcorrect ) * dofblur7 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.4, 0.0 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur4 );
-	col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, 0.4 ) * aspectcorrect ) * dofblur4 );
-    return col / 41.0;
+    vec2 dofblur4 = dofblur * 0.4;	
+	float sampleNum = 41.0f;
+	if (isInside(Texcoord + ( vec2( 0.0f, 0.4f ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.0f, 0.4f ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.15, 0.37 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, 0.37 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.37, 0.15 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, 0.15 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(  0.40, 0.0 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.40, 0.0 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(0.37, -0.15 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, -0.15 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(0.29, -0.29 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(-0.15, -0.37 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, -0.37 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(0.0, -0.4 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(-0.15, 0.37 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, 0.37 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.37, 0.15 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, 0.15 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.37, -0.15 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, -0.15 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(0.15, -0.37 ) * aspectcorrect ) * dofblur)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, -0.37 ) * aspectcorrect ) * dofblur );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.15, 0.37 ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, 0.37 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.37, 0.15 ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, 0.15 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.37, -0.15 ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, -0.15 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(-0.15, -0.37  ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, -0.37 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(-0.15, 0.37  ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.15, 0.37 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.37, 0.15 ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.37, 0.15 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.37, -0.15 ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.37, -0.15 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2(0.15, -0.37  ) * aspectcorrect ) * dofblur9)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.15, -0.37 ) * aspectcorrect ) * dofblur9 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.4, 0.0 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.4, 0.0 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2(-0.29, 0.29 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2(-0.29, -0.29 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.0, 0.4 ) * aspectcorrect ) * dofblur7)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.0,-0.4 ) * aspectcorrect ) * dofblur7 );
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.29, 0.29 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2(0.29, 0.29 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.4, 0.0 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.4, 0.0 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.29, -0.29 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2(0.29, -0.29 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, -0.4 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.29, 0.29 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2(-0.29, 0.29 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( -0.4, 0.0 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2(-0.29, -0.29 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+
+	if (isInside(Texcoord + ( vec2( 0.0, 0.4 ) * aspectcorrect ) * dofblur4)){
+		col += texture( texFramebuffer, Texcoord + ( vec2( 0.0, 0.4 ) * aspectcorrect ) * dofblur4);
+	} else {
+		sampleNum --;
+	}
+    return col / sampleNum;
 }
 void main(){
 	vec4 testColor = texture(texFramebuffer, Texcoord);	

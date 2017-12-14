@@ -12,7 +12,7 @@ LTree::LTree(int iTRtime, OBJObject* obj, GLint shader, int type)
 		tree->addV('X', "F-[[X]+X]++[[X]+X]-*[[X]+X]//[[X]+X]");
 	}
 	else if (type == 1) {
-		tree->addV('X', "F[--X][++X][//X][**X]");
+		tree->addV('X', "FF[--X][++X][//X][**X]");
 	}
 	else {
 		tree->addV('X', "F[-X][X][+X][*X][/X]");
@@ -42,7 +42,7 @@ void LTree::draw()
 
 void LTree::updateHeight(float height)
 {
-	nodeTree->M= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, height - 7.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), pos) * glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 4, glm::vec3(0.0f, 1.0f, 0.0f));
+	nodeTree->M= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, height - 10.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), pos) * glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 4, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 glm::vec3 LTree::getPos()
