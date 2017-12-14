@@ -321,7 +321,8 @@ void Terrain::draw(GLint shaderProgram)
 		glUniform3fv(DirectionLight::uLight_direction, 1, &DirectionLight::direction[0]);
 		glUniform3fv(DirectionLight::uLight_color, 1, &DirectionLight::color[0]);
 
-
+		GLuint uviewDirection = glGetUniformLocation(shaderProgram, "v");
+		glUniform3fv(uviewDirection, 1, &Window::cam_pos[0]);
 		// draw the object. Bind the VAO associated with it.
 		glBindVertexArray(VAO);
 

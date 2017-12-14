@@ -7,6 +7,9 @@ using namespace std;
 using namespace glm;
 
 OBJObjectz * SpongeBob::cube;
+int moveNum = 0;
+vec3 dir(0.0f);
+int i = 1;
 
 void SpongeBob::initializeOBJs() {
 	cube = new OBJObjectz("../res/cube.obj");
@@ -61,11 +64,23 @@ void SpongeBob::draw(GLint shaderProg)
 
 void SpongeBob::update()
 {
-	angle += 0.1f;
-	if (angle > 360) { angle = 0.0f; }
-	//toWorld = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 10.0f)) * glm::rotate(glm::mat4(1.0f), glm::pi<float>() * angle / 180, glm::vec3(0.0f, 1.0f, 0.0f));
-
 	spongeBob->update();
+	if (shouldMove) {
+		if (moveNum == 0) {
+			moveNum = rand() % 10 + 1;
+			int pn1 = rand() % 2;
+			int pn2 = rand() % 2;
+			dir = normalize(vec3((rand() % 10 + 1) * (pn1 == 1? -1 :1), 0.0f, (rand() % 10+ 1) * (pn2 == 1 ? -1 : 1)));
+		}
+		else {
+			moveNum--;
+			toWorld = toWorld * glm::translate(glm::mat4(1.0f), dir);
+			toWorld[3][0] = glm::clamp(toWorld[3][0], -390.0f, 390.0f);
+			toWorld[3][2] = glm::clamp(toWorld[3][2], -390.0f, 390.0f);
+			
+			//cout << toWorld[3][0] << " " << toWorld[3][2] << " " << i << endl;			
+		}
+	}
 }
 
 glm::vec3 SpongeBob::getPos()

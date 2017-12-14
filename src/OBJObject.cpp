@@ -110,9 +110,17 @@ void OBJObject::draw(GLuint shaderProgram, bool isAlpha, bool isInter, int id)
 		// Now send these values to the shader program
 		glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
 		glUniformMatrix4fv(uModelview, 1, GL_FALSE, &modelview[0][0]);
-		glUniformMatrix4fv(uModel, 1, GL_FALSE, &toWorld[0][0]);
+		glUniformMatrix4fv(uModel, 1, GL_FALSE, &(transform * toWorld)[0][0]);
 
 		useNormal = true;
+
+		DirectionLight::uLight_direction = glGetUniformLocation(shaderProgram, "light.direction");
+		DirectionLight::uLight_color = glGetUniformLocation(shaderProgram, "light.color");
+		glUniform3fv(DirectionLight::uLight_direction, 1, &DirectionLight::direction[0]);
+		glUniform3fv(DirectionLight::uLight_color, 1, &DirectionLight::color[0]);
+
+		GLuint uviewDirection = glGetUniformLocation(shaderProgram, "v");
+		glUniform3fv(uviewDirection, 1, &Window::cam_pos[0]);
 
 		// Now draw the cube. We simply need to bind the VAO associated with it.
 		glBindVertexArray(VAO);

@@ -8,6 +8,7 @@ uniform struct Light
 
 uniform mat4 model;
 uniform float random;
+uniform vec3 v;
 
 in vec2 TexCoords;
 in vec3 fragNormal;
@@ -82,17 +83,20 @@ void main()
 		}
 	}
 
-	mat3 normalMatrix = transpose(inverse(mat3(model)));
-	vec3 normal = normalize(normalMatrix * fragNormal);
+	//mat3 normalMatrix = transpose(inverse(mat3(model)));
+	//vec3 normal = normalize(normalMatrix * fragNormal);
+
+	vec3 normal = normalize(mat3(transpose(inverse(model))) * fragNormal);
+
 
 	vec3 fragPosition = vec3(model * vec4(fragposition,1));
 
-	vec3 viewDir = normalize(vec3(0.0, 0.0, 20.0) - fragPosition);
+	vec3 viewDir = normalize(v - fragPosition);
 
 	vec3 lightDir = normalize(-light.direction);
 
 	float intensity = max(dot(lightDir,normal),0.0);
-	vec3 diffuse = vec3(final_color) * intensity;
+	//vec3 diffuse = vec3(final_color) * intensity;
 
 	if (intensity > 1.0)
 		intensity = 1.0;
@@ -107,9 +111,16 @@ void main()
 	else if (intensity > 0.1)
 		intensity = 0.1;
 
-	//vec3 diffuse = vec3(final_color) * intensity;
-
+	vec3 diffuse = vec3(final_color) * intensity;
 	vec3 ambient = 0.15 * vec3(final_color);
-	color = vec4(ambient + diffuse,1.0f);
+
+	float edge = max(dot(viewDir,normal),0.0);
+	//if (edge < 0.05){
+	//	color = vec4(0.0, 0.0, 0.0, 1.0f);
+	//} else{
+		color = vec4(ambient + diffuse,1.0f);
+	//}
+	//color = vec4(vec3(edge), 1.0f);
+
 	//color = vec4(vec3((fragposition.y + 5.0f) / 40.0f),1.0f);
 }

@@ -52,6 +52,7 @@ public:
 	static glm::mat4 V; // V for view
 	static glm::mat4 pMatrix;
 	static glm::vec3 cam_pos;
+	static glm::vec3 cam_look_at;
 	static void initialize_objects(irrklang::ISoundEngine*);
 	static int enableDOF;
 	static int enableMB;

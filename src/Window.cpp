@@ -26,7 +26,7 @@ list<SingleSampleFbo*>msFbo;
 Terrain* terrain;
 DirectionLight* lightSB;
 SpongeBob * bob;
-bool isForwarding, isBacking, isLeftMoving, isRightMoving, mapHadUpdated, disableZeroG;
+bool isForwarding, isBacking, isLeftMoving, isRightMoving, mapHadUpdated, disableZeroG, bobmove;
 vector<LTree*> trees;
 // On some systems you need to change this to the absolute path
 #define VERTEX_SHADER_PATH "../src/shader.vert"
@@ -49,8 +49,8 @@ vector<LTree*> trees;
 #define BOB_FRAGMENT_SHADER_PATH "../src/bobshader.frag"
 #define TREE_NUM 15
 // Default camera parameters
-glm::vec3 Window::cam_pos(0.0f, 100.0f, 0.0f);		// e  | Position of camera
-glm::vec3 cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
+glm::vec3 Window::cam_pos(0.0f, 0.0f, 0.0f);		// e  | Position of camera
+glm::vec3 Window::cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
 int Window::width;
@@ -143,7 +143,7 @@ void Window::initialize_objects(irrklang::ISoundEngine* engine)
 		trees.push_back(tree);
 	}
 	bob->setHeight(terrain->getHeight((bob->getPos().x + 400.0f) / 800.0f * 1023, (bob->getPos().z + 400.0f) / 800.0f * 1023));
-	isForwarding = isBacking = isLeftMoving = isRightMoving = mapHadUpdated = disableZeroG = false;	
+	isForwarding = isBacking = isLeftMoving = isRightMoving = mapHadUpdated = disableZeroG = bobmove = false;	
 }
 
 
@@ -273,6 +273,12 @@ void Window::idle_callback()
 	double nowTime = glfwGetTime();
 	lightSB->update();
 	bob->update();
+	if (mapHadUpdated) {
+		bob->setHeight(terrain->getMapHeight(bob->getPos().x, bob->getPos().z));
+	}
+	else {
+		bob->setHeight(terrain->getHeight((bob->getPos().x + 400.0f) / 800.0f * 1023, (bob->getPos().z + 400.0f) / 800.0f * 1023));
+	}
 	if (mapHadUpdated && disableZeroG) {
 		auto h = terrain->getMapHeight(cam_pos.x, cam_pos.z);
 		cam_pos.y = h + 0.5;
@@ -520,7 +526,7 @@ void Window::mouse_button_callback(GLFWwindow* window, int button, int action, i
 	} else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
 		enable8bj = 0;
 	} else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		if (enable8bj && glfwGetTime() - lastFired > 2) { eng->play2D("../res/awp1.wav"); lastFired = glfwGetTime(); }
+		if (enable8bj && glfwGetTime() - lastFired > 2) { eng->play2D("../res/awp1.wav"); lastFired = glfwGetTime(); bob->shouldMove = true; }
 	}
 }
 

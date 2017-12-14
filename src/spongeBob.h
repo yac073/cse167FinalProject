@@ -44,5 +44,6 @@ public:
 	void update();
 	glm::vec3 getPos();
 	void setHeight(float);
+	bool shouldMove = false;
 };
 #endif
