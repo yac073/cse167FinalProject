@@ -50,7 +50,7 @@ vector<LTree*> trees;
 #define TREE_NUM 15
 // Default camera parameters
 glm::vec3 Window::cam_pos(0.0f, 0.0f, 0.0f);		// e  | Position of camera
-glm::vec3 cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
+glm::vec3 Window::cam_look_at(0.0f, 0.0f, -20.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
 int Window::width;
